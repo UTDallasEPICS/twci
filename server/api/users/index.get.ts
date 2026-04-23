@@ -1,6 +1,12 @@
-import { prisma } from '../../utils/prisma'
-
 export default defineEventHandler(async (event) => {
+  const session = await auth.api.getSession({
+    headers: event.headers,
+  })
+
+  if (!session) {
+    throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
+  }
+
   const users = await prisma.user.findMany({
     select: {
       id: true,

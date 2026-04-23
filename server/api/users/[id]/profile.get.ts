@@ -16,6 +16,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Missing userId' })
   }
 
+  const uploadRoot = process.env.UPLOAD_STORAGE_PATH
+  if (!uploadRoot) {
+    throw createError({ statusCode: 500, statusMessage: 'Upload storage path not configured' })
+  }
+
   const record = await prisma.user.findUnique({
     where: {
       id: userId,
@@ -25,26 +30,22 @@ export default defineEventHandler(async (event) => {
     },
   })
 
-  const imagePath = record?.image
+  if (!record?.image) {
+    throw createError({ statusCode: 404, statusMessage: 'File not found' })
+  }
 
-  const filePath = path.join(process.env.UPLOAD_STORAGE_PATH || 'public/images', imagePath || 'null')
+  const filePath = path.resolve(uploadRoot, record.image)
+  const resolvedRoot = path.resolve(uploadRoot)
+
+  if (!filePath.startsWith(resolvedRoot + path.sep)) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid file path' })
+  }
 
   if (!fs.existsSync(filePath)) {
     throw createError({ statusCode: 404, statusMessage: 'File not found' })
   }
 
   const fileStream = fs.createReadStream(filePath)
-
-  // Set content type based on file extension
-  // const ext = path.extname(filePath).toLowerCase()
-
-  // Defaults to octet stream as file types are NOT saved
-  // const mime =
-  //   ext === ".png" ? "image/png" :
-  //   ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" :
-  //   ext === ".gif" ? "image/gif" :
-  //   ext === ".webp" ? "image/webp" :
-  //   "application/octet-stream"
 
   setHeader(event, 'Content-Type', 'application/octet-stream')
 

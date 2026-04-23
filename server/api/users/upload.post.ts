@@ -1,7 +1,7 @@
-import path from 'path'
-import fs from 'fs'
-import { prisma } from '~~/server/utils/prisma'
-import { auth } from '~~/server/utils/auth'
+import path from 'node:path'
+import fs from 'node:fs/promises'
+
+const ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
 
 export default defineEventHandler(async (event) => {
   const session = await auth.api.getSession({
@@ -24,31 +24,25 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'File missing' })
   }
 
-  const dirPath = path.join(
-    process.env.UPLOAD_STORAGE_PATH || 'public/images',
-    'users',
-    session.user.id,
-    'images'
-  )
-
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true })
+  if (!file.type || !ALLOWED_MIME_TYPES.includes(file.type)) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid file type. Only PNG, JPEG, GIF, and WebP are allowed.' })
   }
+
+  const uploadRoot = process.env.UPLOAD_STORAGE_PATH
+  if (!uploadRoot) {
+    throw createError({ statusCode: 500, statusMessage: 'Upload storage path not configured' })
+  }
+
+  const dirPath = path.join(uploadRoot, 'users', session.user.id, 'images')
+
+  await fs.mkdir(dirPath, { recursive: true })
 
   const randomImageId = crypto.randomUUID()
-
   const filePath = path.join(dirPath, randomImageId)
 
-  if (fs.existsSync(filePath)) {
-    throw createError({ statusCode: 400, message: 'Image already exists.' })
-  }
+  await fs.writeFile(filePath, file.data)
 
-  await fs.writeFile(filePath, file.data, (err) => {
-    if (err) throw err
-  })
-
-  // Store the generated image ID in the database as required
-  const addedImage = await prisma.user.update({
+  await prisma.user.update({
     where: {
       id: session.user.id,
     },
@@ -56,8 +50,6 @@ export default defineEventHandler(async (event) => {
       image: path.join('users', session.user.id, 'images', randomImageId),
     },
   })
-
-  console.log(addedImage)
 
   setResponseStatus(event, 201)
 
