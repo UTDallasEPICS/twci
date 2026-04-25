@@ -23,7 +23,7 @@ Nuxt 4 template app with Better Auth (email OTP authentication), Prisma ORM, SQL
 - **UI**: Nuxt UI v3 components (`UButton`, `UCard`, `UModal`, etc.) with Tailwind CSS
 - **Auth client**: `app/utils/auth-client.ts` — Better Auth Vue client with emailOTP plugin
 - **Global auth middleware**: `app/middleware/auth.global.ts` — redirects unauthenticated users to `/auth`, authenticated users away from `/auth`
-- **Pages**: `/auth` (email OTP login flow), `/` (dashboard), `/locations` (location list), `/locations/[id]` (location detail)
+- **Pages**: `/auth` (email OTP login flow), `/` (dashboard), `/locations` (location list), `/locations/[id]` (location detail), `/users` (user list, admin/supervisor), `/users/[id]` (user detail), `/profile` (self-service profile)
 
 ### Backend (`server/`)
 
@@ -32,7 +32,8 @@ Nuxt 4 template app with Better Auth (email OTP authentication), Prisma ORM, SQL
 - **Auth middleware**: `server/middleware/auth.ts` — attaches session to `event.context.session` for all `/api/*` routes (skips `/api/auth/*`)
 - **Role utility**: `server/utils/require-role.ts` — `requireRole(event, 'admin')` one-liner for role checks in route handlers
 - **Prisma client**: `server/utils/prisma.ts` — uses `@prisma/adapter-better-sqlite3` driver adapter
-- **API routes**: `server/api/users/` (user listing, profile pictures), `server/api/locations/` (location CRUD with soft delete)
+- **Display name utility**: `server/utils/display-name.ts` — computes display name from preferred/legal name fields
+- **API routes**: `server/api/users/` (user CRUD, profile pictures, `/me` endpoint), `server/api/locations/` (location CRUD with soft delete)
 
 ### Database (`prisma/`)
 
