@@ -46,7 +46,11 @@
       if (error) {
         toast.add({ title: 'Error', description: error.message, color: 'error' })
       } else {
-        await navigateTo('/', { external: true })
+        const route = useRoute()
+        const redirect = (route.query.redirect as string) || '/'
+        const safeRedirect =
+          redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/'
+        await navigateTo(safeRedirect, { external: true })
       }
     }
   }

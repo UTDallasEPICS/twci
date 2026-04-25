@@ -8,7 +8,13 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "prisma:reset": "prisma migrate reset -f && prisma migrate dev  && prisma generate && prisma db seed"
+    "prisma:reset": "prisma migrate reset -f && prisma migrate dev  && prisma generate && prisma db seed",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run server/",
+    "typecheck": "nuxi typecheck",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@nuxt/image": "2.0.0",
@@ -30,6 +36,7 @@
     "prettier": "3.7.4",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "prisma": "^7.3.0",
-    "tsx": "^4.21.0"
+    "tsx": "^4.21.0",
+    "vitest": "^4.1.5"
   }
 }
