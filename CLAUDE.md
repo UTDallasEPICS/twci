@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Nuxt 4 template app with Better Auth (email OTP authentication), Prisma ORM, SQLite, and Nuxt UI v3. Uses pnpm as the package manager.
+TWC Inventory — an inventory management app for The Warren Center. Built with Nuxt 4, Better Auth (email OTP authentication), Prisma ORM, SQLite, and Nuxt UI v3. Uses pnpm as the package manager.
 
 ## Common Commands
 
@@ -23,20 +23,27 @@ Nuxt 4 template app with Better Auth (email OTP authentication), Prisma ORM, SQL
 - **UI**: Nuxt UI v3 components (`UButton`, `UCard`, `UModal`, etc.) with Tailwind CSS
 - **Auth client**: `app/utils/auth-client.ts` — Better Auth Vue client with emailOTP plugin
 - **Global auth middleware**: `app/middleware/auth.global.ts` — redirects unauthenticated users to `/auth`, authenticated users away from `/auth`
-- **Pages**: `/auth` (email OTP login flow) and `/` (dashboard with user list + profile picture upload)
+- **Pages**:
+  - `/auth` — email OTP login flow
+  - `/` — dashboard (user list + profile picture upload)
+  - `/locations` — location list with CRUD modals (admin only)
+  - `/locations/[id]` — location detail with item counts and current items
 
 ### Backend (`server/`)
 
 - **Auth handler**: `server/api/auth/[...all].ts` — catch-all route delegating to Better Auth
-- **Auth config**: `server/utils/auth.ts` — Better Auth setup with Prisma adapter (SQLite) and emailOTP plugin using Nodemailer (Gmail SMTP)
+- **Auth config**: `server/utils/auth.ts` — Better Auth setup with Prisma adapter (SQLite), emailOTP plugin, domain restriction (`isEmailAllowed`)
+- **Auth utility**: `server/utils/require-auth.ts` — `requireAuth(event, roles?)` for session + role checking (returns 401/403)
 - **Prisma client**: `server/utils/prisma.ts` — uses `@prisma/adapter-better-sqlite3` driver adapter
-- **API routes**: `server/api/users/` — user listing, profile image serving, and file upload (multipart form)
+- **API routes**:
+  - `server/api/users/` — user listing, profile image serving, and file upload (multipart form)
+  - `server/api/locations/` — full CRUD with item counts
 
 ### Database (`prisma/`)
 
 - **SQLite** via `better-sqlite3` driver adapter (not the default Prisma SQLite driver)
 - **Prisma client output**: `prisma/generated/` (custom output path)
-- **Schema models**: User, Session, Account, Verification (Better Auth tables)
+- **Schema models**: User, Session, Account, Verification (Better Auth tables), Location, Item, CheckoutLog (inventory tables)
 - **Seed**: `prisma/seed.ts` run via `tsx`
 - **Config**: `prisma.config.ts` at project root
 

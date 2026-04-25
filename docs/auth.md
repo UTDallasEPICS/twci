@@ -33,11 +33,11 @@ function isEmailAllowed(email: string): boolean {
 
 Three roles, stored on the User model:
 
-| Role | Permissions |
-|---|---|
-| **admin** | Full CRUD on locations, items, users. Check in/out items. |
-| **supervisor** | Check in/out items (for self and others). Read all data. |
-| **employee** | Read-only. Can view items, locations, own checkout history. Cannot perform check-in/out. |
+| Role           | Permissions                                                                              |
+| -------------- | ---------------------------------------------------------------------------------------- |
+| **admin**      | Full CRUD on locations, items, users. Check in/out items.                                |
+| **supervisor** | Check in/out items (for self and others). Read all data.                                 |
+| **employee**   | Read-only. Can view items, locations, own checkout history. Cannot perform check-in/out. |
 
 ### Where roles are enforced
 
@@ -47,11 +47,11 @@ Three roles, stored on the User model:
 
 ## User Status & Login
 
-| Status | Can log in? | Notes |
-|---|---|---|
-| `active` | Yes | Normal access |
-| `on_leave` | Yes | Can still log in (e.g., to return items), but UI shows indicator |
-| `inactive` | No | Login blocked. Admin must reactivate. |
+| Status     | Can log in? | Notes                                                            |
+| ---------- | ----------- | ---------------------------------------------------------------- |
+| `active`   | Yes         | Normal access                                                    |
+| `on_leave` | Yes         | Can still log in (e.g., to return items), but UI shows indicator |
+| `inactive` | No          | Login blocked. Admin must reactivate.                            |
 
 Inactive users should be blocked at the auth level — either via a Better Auth hook that checks status before completing sign-in, or by checking status in the global middleware and redirecting to an "account inactive" page.
 
@@ -83,7 +83,7 @@ if (!session.value && to.path !== '/auth') {
 ```typescript
 // In auth.vue, after successful signIn
 const route = useRoute()
-const redirectTo = route.query.redirect as string || '/'
+const redirectTo = (route.query.redirect as string) || '/'
 await navigateTo(redirectTo, { external: true })
 ```
 
@@ -91,26 +91,27 @@ await navigateTo(redirectTo, { external: true })
 
 ```typescript
 if (session.value && to.path === '/auth') {
-  const redirect = to.query.redirect as string || '/'
+  const redirect = (to.query.redirect as string) || '/'
   return navigateTo(redirect)
 }
 ```
 
 ## Session Validation (Server-Side)
 
-All API routes validate the session before processing:
+All API routes use the `requireAuth` utility (`server/utils/require-auth.ts`) for authentication and role checking:
 
 ```typescript
-const session = await auth.api.getSession({ headers: event.headers })
+// Authentication only (any logged-in user)
+const session = await requireAuth(event)
 
-if (!session) {
-  throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
-}
-
-// For role-restricted endpoints:
-const user = await prisma.user.findUnique({ where: { id: session.user.id } })
-
-if (user.role !== 'admin') {
-  throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
-}
+// Authentication + role check (throws 403 if role doesn't match)
+const session = await requireAuth(event, ['admin'])
+const session = await requireAuth(event, ['admin', 'supervisor'])
 ```
+
+`requireAuth` returns the session object (with `user` and `session` properties) or throws:
+
+- **401 Unauthorized** — no valid session
+- **403 Forbidden** — session exists but user's role is not in the allowed list
+
+The returned `session.user` includes `id`, `email`, `name`, `role`, and `status` fields.
