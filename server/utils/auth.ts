@@ -2,7 +2,6 @@ import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { prisma } from './prisma'
 import { emailOTP } from 'better-auth/plugins/email-otp'
-import { APIError } from 'better-auth/api'
 import nodemailer from 'nodemailer'
 
 const transporter = nodemailer.createTransport({
@@ -39,21 +38,4 @@ export const auth = betterAuth({
       },
     }),
   ],
-  databaseHooks: {
-    session: {
-      create: {
-        before: async (session) => {
-          const user = await prisma.user.findUnique({
-            where: { id: session.userId },
-            select: { status: true },
-          })
-          if (user?.status === 'inactive') {
-            throw new APIError('FORBIDDEN', {
-              message: 'Your account has been deactivated. Contact an administrator.',
-            })
-          }
-        },
-      },
-    },
-  },
 })
