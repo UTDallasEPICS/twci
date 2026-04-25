@@ -8,15 +8,25 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(uuid())
-  name          String
-  email         String
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  sessions      Session[]
-  accounts      Account[]
+  id                String    @id @default(uuid())
+  name              String
+  email             String
+  emailVerified     Boolean   @default(false)
+  image             String?
+  legalFirstName    String?
+  legalLastName     String?
+  preferredFirstName String?
+  preferredLastName  String?
+  role              String    @default("employee")
+  status            String    @default("active")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  sessions          Session[]
+  accounts          Account[]
+
+  itemsHeld         CheckoutLog[] @relation("ItemHolder")
+  checkoutsPerformed CheckoutLog[] @relation("CheckoutPerformer")
+  checkinsPerformed  CheckoutLog[] @relation("CheckinPerformer")
 
   @@unique([email])
   @@map("user")
@@ -68,4 +78,69 @@ model Verification {
 
   @@unique([identifier])
   @@map("verification")
+}
+
+model Location {
+  id        String   @id @default(uuid())
+  name      String
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  homeItems     Item[]         @relation("HomeLocation")
+  currentItems  Item[]         @relation("CurrentLocation")
+  checkoutsFrom CheckoutLog[]  @relation("CheckedOutFromLocation")
+  checkinsAt    CheckoutLog[]  @relation("CheckedInAtLocation")
+
+  @@unique([name])
+  @@map("location")
+}
+
+model Item {
+  id                String   @id @default(uuid())
+  name              String
+  description       String?
+  condition         String   @default("good")
+  status            String   @default("available")
+  homeLocationId    String
+  homeLocation      Location @relation("HomeLocation", fields: [homeLocationId], references: [id])
+  currentLocationId String
+  currentLocation   Location @relation("CurrentLocation", fields: [currentLocationId], references: [id])
+  qrCodeUrl         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  checkoutLogs CheckoutLog[]
+
+  @@index([homeLocationId])
+  @@index([currentLocationId])
+  @@index([status])
+  @@map("item")
+}
+
+model CheckoutLog {
+  id                       String    @id @default(uuid())
+  itemId                   String
+  item                     Item      @relation(fields: [itemId], references: [id])
+  userId                   String
+  user                     User      @relation("ItemHolder", fields: [userId], references: [id])
+  checkedOutBy             String
+  checkedOutByUser         User      @relation("CheckoutPerformer", fields: [checkedOutBy], references: [id])
+  checkedOutFromLocationId String
+  checkedOutFromLocation   Location  @relation("CheckedOutFromLocation", fields: [checkedOutFromLocationId], references: [id])
+  checkedOutAt             DateTime  @default(now())
+
+  checkedInBy              String?
+  checkedInByUser          User?     @relation("CheckinPerformer", fields: [checkedInBy], references: [id])
+  checkedInAtLocationId    String?
+  checkedInAtLocation      Location? @relation("CheckedInAtLocation", fields: [checkedInAtLocationId], references: [id])
+  checkedInAt              DateTime?
+  conditionOnReturn        String?
+
+  createdAt DateTime @default(now())
+
+  @@index([itemId])
+  @@index([userId])
+  @@index([checkedInAt])
+  @@map("checkout_log")
 }

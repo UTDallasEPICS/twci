@@ -20,9 +20,7 @@ const ALLOWED_EMAILS = ['reachtusharwani@gmail.com', 'tmw220003@utdallas.edu']
 
 export function isEmailAllowed(email: string): boolean {
   const domain = email.split('@')[1]?.toLowerCase() ?? ''
-  return (
-    ALLOWED_DOMAINS.includes(domain) || ALLOWED_EMAILS.includes(email.toLowerCase())
-  )
+  return ALLOWED_DOMAINS.includes(domain) || ALLOWED_EMAILS.includes(email.toLowerCase())
 }
 
 export const auth = betterAuth({
@@ -42,22 +40,6 @@ export const auth = betterAuth({
     }),
   ],
   databaseHooks: {
-    verification: {
-      create: {
-        before: async (verification) => {
-          // Identifier format: "{type}-otp-{email}"
-          const identifier = verification.identifier
-          if (identifier.includes('-otp-')) {
-            const email = identifier.substring(identifier.indexOf('-otp-') + 5)
-            if (!isEmailAllowed(email)) {
-              throw new APIError('FORBIDDEN', {
-                message: 'This email is not authorized to access this application.',
-              })
-            }
-          }
-        },
-      },
-    },
     session: {
       create: {
         before: async (session) => {
