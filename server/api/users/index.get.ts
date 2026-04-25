@@ -1,28 +1,57 @@
 export default defineEventHandler(async (event) => {
-  const session = await auth.api.getSession({
-    headers: event.headers,
-  })
+  const session = await requireAuth(event, ['admin', 'supervisor'])
 
-  if (!session) {
-    throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
+  const query = getQuery(event)
+  const role = query.role as string | undefined
+  const status = query.status as string | undefined
+  const search = query.search as string | undefined
+
+  const where: Record<string, unknown> = {}
+
+  if (role) {
+    where.role = role
+  }
+  if (status) {
+    where.status = status
+  }
+  if (search) {
+    where.OR = [
+      { legalFirstName: { contains: search } },
+      { legalLastName: { contains: search } },
+      { preferredFirstName: { contains: search } },
+      { preferredLastName: { contains: search } },
+      { email: { contains: search } },
+      { name: { contains: search } },
+    ]
   }
 
   const users = await prisma.user.findMany({
+    where,
     select: {
       id: true,
       email: true,
       name: true,
-      emailVerified: true,
+      legalFirstName: true,
+      legalLastName: true,
+      preferredFirstName: true,
+      preferredLastName: true,
+      role: true,
+      status: true,
       image: true,
     },
+    orderBy: { name: 'asc' },
   })
 
-  const redacted = users.map((user) => {
-    return {
-      ...user,
-      image: user.image != null,
-    }
-  })
-
-  return redacted
+  return users.map((user) => ({
+    id: user.id,
+    legalFirstName: user.legalFirstName,
+    legalLastName: user.legalLastName,
+    preferredFirstName: user.preferredFirstName,
+    preferredLastName: user.preferredLastName,
+    displayName: getDisplayName(user),
+    email: user.email,
+    role: user.role,
+    status: user.status,
+    image: user.image != null,
+  }))
 })

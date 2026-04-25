@@ -25,7 +25,10 @@ export default defineEventHandler(async (event) => {
   }
 
   if (!file.type || !ALLOWED_MIME_TYPES.includes(file.type)) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid file type. Only PNG, JPEG, GIF, and WebP are allowed.' })
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Invalid file type. Only PNG, JPEG, GIF, and WebP are allowed.',
+    })
   }
 
   const uploadRoot = process.env.UPLOAD_STORAGE_PATH
