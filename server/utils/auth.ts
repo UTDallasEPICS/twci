@@ -14,6 +14,14 @@ const transporter = nodemailer.createTransport({
   },
 })
 
+const ALLOWED_DOMAINS = ['thewarrencenter.org']
+const ALLOWED_EMAILS = ['reachtusharwani@gmail.com', 'tmw220003@utdallas.edu']
+
+export function isEmailAllowed(email: string): boolean {
+  const domain = email.split('@')[1]?.toLowerCase() ?? ''
+  return ALLOWED_DOMAINS.includes(domain) || ALLOWED_EMAILS.includes(email.toLowerCase())
+}
+
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: 'sqlite',
@@ -24,7 +32,7 @@ export const auth = betterAuth({
         await transporter.sendMail({
           from: process.env.EMAIL_FROM,
           to: email,
-          subject: 'OTP for nuxt-template',
+          subject: 'OTP for TWC Inventory',
           html: `Your OTP is: ${otp}`,
         })
       },
