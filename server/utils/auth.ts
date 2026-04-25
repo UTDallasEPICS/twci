@@ -32,11 +32,6 @@ export const auth = betterAuth({
   plugins: [
     emailOTP({
       async sendVerificationOTP({ email, otp, type: _type }) {
-        if (!isEmailAllowed(email)) {
-          throw new APIError('FORBIDDEN', {
-            message: 'This email is not authorized to access this application.',
-          })
-        }
         await transporter.sendMail({
           from: process.env.EMAIL_FROM,
           to: email,
@@ -47,6 +42,22 @@ export const auth = betterAuth({
     }),
   ],
   databaseHooks: {
+    verification: {
+      create: {
+        before: async (verification) => {
+          // Identifier format: "{type}-otp-{email}"
+          const identifier = verification.identifier
+          if (identifier.includes('-otp-')) {
+            const email = identifier.substring(identifier.indexOf('-otp-') + 5)
+            if (!isEmailAllowed(email)) {
+              throw new APIError('FORBIDDEN', {
+                message: 'This email is not authorized to access this application.',
+              })
+            }
+          }
+        },
+      },
+    },
     session: {
       create: {
         before: async (session) => {
