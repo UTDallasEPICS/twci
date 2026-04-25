@@ -92,6 +92,7 @@ model Location {
   checkoutsFrom CheckoutLog[]  @relation("CheckedOutFromLocation")
   checkinsAt    CheckoutLog[]  @relation("CheckedInAtLocation")
 
+  @@unique([name])
   @@map("location")
 }
 
