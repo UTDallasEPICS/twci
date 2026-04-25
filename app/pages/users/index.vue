@@ -8,7 +8,7 @@
   const isAdmin = computed(() => session.value?.user?.role === 'admin')
 
   // Filters
-  const roleFilter = ref<string>('')
+  const roleFilter = ref<string>('all')
   const statusFilter = ref<string>('active')
   const searchQuery = ref('')
   const debouncedSearch = ref('')
@@ -23,7 +23,7 @@
 
   const fetchQuery = computed(() => {
     const q: Record<string, string> = {}
-    if (roleFilter.value) q.role = roleFilter.value
+    if (roleFilter.value && roleFilter.value !== 'all') q.role = roleFilter.value
     if (isAdmin.value && statusFilter.value) q.status = statusFilter.value
     if (debouncedSearch.value) q.search = debouncedSearch.value
     return q
@@ -38,7 +38,7 @@
 
   // Role options for filter
   const roleOptions = [
-    { label: 'All roles', value: '' },
+    { label: 'All roles', value: 'all' },
     { label: 'Admin', value: 'admin' },
     { label: 'Supervisor', value: 'supervisor' },
     { label: 'Employee', value: 'employee' },
