@@ -13,7 +13,7 @@
 
   const { data: session } = await authClient.useSession(useFetch)
   const isLoggedIn = computed(() => !!session.value)
-  const _isAdmin = computed(() => session.value?.user?.role === 'admin')
+  const userRole = computed(() => session.value?.user?.role)
 
   const navLinks = computed(() => {
     if (!isLoggedIn.value) return []
@@ -21,6 +21,10 @@
       { to: '/', label: 'Dashboard', icon: 'i-heroicons-home-20-solid' },
       { to: '/locations', label: 'Locations', icon: 'i-heroicons-map-pin-20-solid' },
     ]
+    if (userRole.value === 'admin' || userRole.value === 'supervisor') {
+      links.push({ to: '/users', label: 'Users', icon: 'i-heroicons-users-20-solid' })
+    }
+    links.push({ to: '/profile', label: 'Profile', icon: 'i-heroicons-user-circle-20-solid' })
     return links
   })
 
