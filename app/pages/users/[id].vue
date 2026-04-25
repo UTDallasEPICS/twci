@@ -2,6 +2,22 @@
   import { z } from 'zod'
   import type { FormSubmitEvent } from '@nuxt/ui'
 
+  interface UserDetail {
+    id: string
+    email: string
+    displayName: string
+    role: string
+    status: string
+    legalFirstName: string | null
+    legalLastName: string | null
+    preferredFirstName: string | null
+    preferredLastName: string | null
+    image: boolean
+    emailVerified: boolean
+    createdAt: string
+    updatedAt: string
+  }
+
   const route = useRoute()
   const toast = useToast()
   const id = route.params.id as string
@@ -9,7 +25,7 @@
   const { data: session } = await authClient.useSession(useFetch)
   const isAdmin = computed(() => session.value?.user?.role === 'admin')
 
-  const { data: user, pending, error, refresh } = await useFetch(`/api/users/${id}`)
+  const { data: user, pending, error, refresh } = await useFetch<UserDetail>(`/api/users/${id}`)
 
   // Edit modal
   const isEditOpen = ref(false)
