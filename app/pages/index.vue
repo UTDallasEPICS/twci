@@ -89,9 +89,9 @@
           <UButton
             color="success"
             variant="soft"
-            @click="openModal"
             icon="i-heroicons-arrow-up-on-square-20-solid"
             label="Update Profile Picture"
+            @click="openModal"
           />
 
           <template #content>

@@ -24,9 +24,9 @@
     otp: [] as string[],
   })
 
-  async function handleSubmit(event: FormSubmitEvent<any>) {
+  async function handleSubmit(_event: FormSubmitEvent<Record<string, unknown>>) {
     if (!isEmailSent.value) {
-      const { data, error } = await authClient.emailOtp.sendVerificationOtp({
+      const { error } = await authClient.emailOtp.sendVerificationOtp({
         email: state.email,
         type: 'sign-in',
       })
@@ -38,7 +38,7 @@
         toast.add({ title: 'Success', description: 'OTP sent to your email', color: 'success' })
       }
     } else {
-      const { data, error } = await authClient.signIn.emailOtp({
+      const { error } = await authClient.signIn.emailOtp({
         email: state.email,
         otp: state.otp.join(''),
       })
@@ -59,15 +59,15 @@
         <div class="flex items-center justify-center text-xl font-bold">Login</div>
       </template>
 
-      <UForm :schema="schema" :state="state" @submit="handleSubmit" class="space-y-5">
-        <UFormField name="email" v-if="!isEmailSent">
+      <UForm :schema="schema" :state="state" class="space-y-5" @submit="handleSubmit">
+        <UFormField v-if="!isEmailSent" name="email">
           <UInput v-model="state.email" class="w-full" placeholder="Email" />
         </UFormField>
 
-        <UFormField name="otp" v-if="isEmailSent">
+        <UFormField v-if="isEmailSent" name="otp">
           <UPinInput
-            otp
             v-model="state.otp"
+            otp
             :length="6"
             size="xl"
             class="flex w-full items-center justify-center"

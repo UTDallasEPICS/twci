@@ -12,8 +12,7 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-});
-
+})
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -21,7 +20,7 @@ export const auth = betterAuth({
   }),
   plugins: [
     emailOTP({
-      async sendVerificationOTP({ email, otp, type }) {
+      async sendVerificationOTP({ email, otp, type: _type }) {
         await transporter.sendMail({
           from: process.env.EMAIL_FROM,
           to: email,
