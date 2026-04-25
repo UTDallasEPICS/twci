@@ -25,3 +25,7 @@ logs
 
 /prisma/generated
 /dev.db
+
+# Playwright
+test-results/
+playwright-report/

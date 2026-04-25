@@ -8,7 +8,25 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "prisma:reset": "prisma migrate reset -f && prisma migrate dev  && prisma generate && prisma db seed"
+    "prisma:reset": "prisma migrate reset -f && prisma migrate dev  && prisma generate && prisma db seed",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run --dir server tests/unit",
+    "test:api": "vitest run --dir tests/api",
+    "test:e2e": "playwright test",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "nuxi typecheck",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,vue,js,mjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,css,yaml,yml}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "@nuxt/image": "2.0.0",
@@ -25,11 +43,18 @@
     "zod": "^4.2.1"
   },
   "devDependencies": {
+    "@nuxt/eslint": "^1.15.2",
+    "@nuxt/test-utils": "^4.0.2",
+    "@playwright/test": "^1.59.1",
     "@types/better-sqlite3": "^7.6.13",
     "concurrently": "^9.2.1",
+    "eslint": "^10.2.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "prettier": "3.7.4",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "prisma": "^7.3.0",
-    "tsx": "^4.21.0"
+    "tsx": "^4.21.0",
+    "vitest": "^4.1.5"
   }
 }
