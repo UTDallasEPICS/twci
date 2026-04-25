@@ -1,12 +1,4 @@
-export default defineEventHandler(async (event) => {
-  const session = await auth.api.getSession({
-    headers: event.headers,
-  })
-
-  if (!session) {
-    throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
-  }
-
+export default defineEventHandler(async () => {
   const users = await prisma.user.findMany({
     select: {
       id: true,
