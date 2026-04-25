@@ -9,27 +9,29 @@ Locations represent the physical TWC facilities where equipment is stored and us
 See [data-model.md](../data-model.md) for the full `Location` schema.
 
 Fields:
+
 - **name**: Display name (e.g., "The Warren Center - Central")
 - **address**: Optional full street address
+- **status**: `active` or `inactive` (default: `active`)
 
 ## Permissions
 
-| Action | Admin | Supervisor | Employee |
-|---|---|---|---|
-| View locations | Yes | Yes | Yes |
-| Create location | Yes | No | No |
-| Edit location | Yes | No | No |
-| Delete location | Yes | No | No |
+| Action          | Admin | Supervisor | Employee |
+| --------------- | ----- | ---------- | -------- |
+| View locations  | Yes   | Yes        | Yes      |
+| Create location | Yes   | No         | No       |
+| Edit location   | Yes   | No         | No       |
+| Delete location | Yes   | No         | No       |
 
 ## Seed Locations
 
 Three locations are seeded at setup:
 
-| Name | Address |
-|---|---|
-| The Warren Center - Central | 320 Custer Rd, Richardson, TX 75080 |
-| The Warren Center - East | 2625 Anita Dr, Garland, TX 75041 |
-| The Warren Center - West | 400 E Royal Ln Suite 112, Irving, TX 75039 |
+| Name                        | Address                                    |
+| --------------------------- | ------------------------------------------ |
+| The Warren Center - Central | 320 Custer Rd, Richardson, TX 75080        |
+| The Warren Center - East    | 2625 Anita Dr, Garland, TX 75041           |
+| The Warren Center - West    | 400 E Royal Ln Suite 112, Irving, TX 75039 |
 
 ## Admin CRUD
 
@@ -46,6 +48,7 @@ Three locations are seeded at setup:
 **Route**: `/locations/[id]`
 
 Displays:
+
 - Location name and address
 - Count of items with this as home location
 - Count of items currently at this location
@@ -55,21 +58,27 @@ Displays:
 ### Create / Edit Form
 
 Fields:
+
 - **Name** (required)
 - **Address** (optional)
 
-### Delete
+### Deactivate (Soft Delete)
 
-Deleting a location requires handling items that reference it:
-- If any items have this as their `homeLocationId` or `currentLocationId`, deletion should be blocked with a message indicating the items must be reassigned first.
-- Alternatively, implement a soft-delete or require the admin to reassign items before deletion.
+Locations are never hard-deleted. Instead, admins set a location's status to `inactive`:
+
+- Inactive locations are hidden from normal lists and dropdowns (non-admin users cannot see them)
+- Admins can view inactive locations via a toggle on the location list page
+- Deactivation is blocked if any items have the location as their `currentLocationId` — items must be reassigned first
+- Items with an inactive location as `homeLocationId` are allowed (historical reference)
+- Admins can reactivate a location by setting its status back to `active`
+
+This mirrors the user model's `active`/`inactive` status pattern.
 
 ## API Routes
 
-| Method | Route | Description | Role |
-|---|---|---|---|
-| GET | `/api/locations` | List all locations | All |
-| GET | `/api/locations/[id]` | Get location detail with item counts | All |
-| POST | `/api/locations` | Create location | Admin |
-| PUT | `/api/locations/[id]` | Update location | Admin |
-| DELETE | `/api/locations/[id]` | Delete location (blocked if items exist) | Admin |
+| Method | Route                 | Description                                       | Role  |
+| ------ | --------------------- | ------------------------------------------------- | ----- |
+| GET    | `/api/locations`      | List all locations                                | All   |
+| GET    | `/api/locations/[id]` | Get location detail with item counts              | All   |
+| POST   | `/api/locations`      | Create location                                   | Admin |
+| PUT    | `/api/locations/[id]` | Update location (including deactivate/reactivate) | Admin |
