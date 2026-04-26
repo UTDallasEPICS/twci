@@ -11,6 +11,7 @@
   const statusFilter = ref<string>('all')
   const conditionFilter = ref<string>('all')
   const locationFilter = ref<string>('all')
+  const sortOption = ref<string>('name_asc')
   const searchQuery = ref('')
   const debouncedSearch = ref('')
 
@@ -41,6 +42,7 @@
     if (conditionFilter.value && conditionFilter.value !== 'all')
       q.condition = conditionFilter.value
     if (locationFilter.value && locationFilter.value !== 'all') q.locationId = locationFilter.value
+    if (sortOption.value && sortOption.value !== 'name_asc') q.sort = sortOption.value
     if (debouncedSearch.value) q.search = debouncedSearch.value
     return q
   })
@@ -59,6 +61,15 @@
     { label: 'Fair', value: 'fair' },
     { label: 'Damaged', value: 'damaged' },
     { label: 'Retired', value: 'retired' },
+  ]
+
+  // Sort options
+  const sortOptions = [
+    { label: 'Name A-Z', value: 'name_asc' },
+    { label: 'Name Z-A', value: 'name_desc' },
+    { label: 'Newest first', value: 'newest' },
+    { label: 'Oldest first', value: 'oldest' },
+    { label: 'Recently updated', value: 'updated' },
   ]
 
   // Create/edit modal
@@ -191,6 +202,7 @@
       />
       <USelect v-model="conditionFilter" :items="conditionOptions" class="w-full md:w-44" />
       <USelect v-model="locationFilter" :items="locationOptions" class="w-full md:w-52" />
+      <USelect v-model="sortOption" :items="sortOptions" class="w-full md:w-44" />
       <UButtonGroup>
         <UButton
           :color="statusFilter === 'all' ? 'primary' : 'neutral'"

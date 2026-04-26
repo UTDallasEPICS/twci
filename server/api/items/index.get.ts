@@ -6,6 +6,7 @@ export default defineEventHandler(async (event) => {
   const status = query.status as string | undefined
   const condition = query.condition as string | undefined
   const search = query.search as string | undefined
+  const sort = query.sort as string | undefined
 
   const where: Record<string, unknown> = {}
 
@@ -45,7 +46,16 @@ export default defineEventHandler(async (event) => {
         select: { id: true, name: true },
       },
     },
-    orderBy: { name: 'asc' },
+    orderBy:
+      sort === 'name_desc'
+        ? { name: 'desc' }
+        : sort === 'newest'
+          ? { createdAt: 'desc' }
+          : sort === 'oldest'
+            ? { createdAt: 'asc' }
+            : sort === 'updated'
+              ? { updatedAt: 'desc' }
+              : { name: 'asc' },
   })
 
   return items.map((item) => ({
