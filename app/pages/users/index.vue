@@ -10,6 +10,7 @@
   // Filters
   const roleFilter = ref<string>('all')
   const statusFilter = ref<string>('active')
+  const sortOption = ref<string>('name_asc')
   const searchQuery = ref('')
   const debouncedSearch = ref('')
 
@@ -25,6 +26,7 @@
     const q: Record<string, string> = {}
     if (roleFilter.value && roleFilter.value !== 'all') q.role = roleFilter.value
     if (isAdmin.value && statusFilter.value) q.status = statusFilter.value
+    if (sortOption.value && sortOption.value !== 'name_asc') q.sort = sortOption.value
     if (debouncedSearch.value) q.search = debouncedSearch.value
     return q
   })
@@ -42,6 +44,15 @@
     { label: 'Admin', value: 'admin' },
     { label: 'Supervisor', value: 'supervisor' },
     { label: 'Employee', value: 'employee' },
+  ]
+
+  // Sort options
+  const sortOptions = [
+    { label: 'Name A-Z', value: 'name_asc' },
+    { label: 'Name Z-A', value: 'name_desc' },
+    { label: 'Newest first', value: 'newest' },
+    { label: 'Oldest first', value: 'oldest' },
+    { label: 'Recently updated', value: 'updated' },
   ]
 
   // Create user modal
@@ -149,6 +160,7 @@
         class="w-full md:w-64"
       />
       <USelect v-model="roleFilter" :items="roleOptions" class="w-full md:w-40" />
+      <USelect v-model="sortOption" :items="sortOptions" class="w-full md:w-44" />
       <UButtonGroup v-if="isAdmin">
         <UButton
           :color="statusFilter === 'active' ? 'primary' : 'neutral'"
