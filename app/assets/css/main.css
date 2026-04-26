@@ -1,2 +1,28 @@
 @import 'tailwindcss';
 @import '@nuxt/ui';
+
+@media print {
+  .print-controls,
+  header,
+  nav {
+    display: none !important;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  .print-page {
+    margin: 0;
+    padding: 0;
+  }
+
+  .print-label {
+    break-inside: avoid;
+  }
+
+  .print-page-break {
+    break-after: page;
+  }
+}

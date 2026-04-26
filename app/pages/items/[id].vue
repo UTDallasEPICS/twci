@@ -375,6 +375,14 @@
                 <UButton
                   variant="soft"
                   color="neutral"
+                  icon="i-heroicons-printer-20-solid"
+                  label="Print QR"
+                  size="sm"
+                  :to="`/items/print-${id}?size=medium`"
+                />
+                <UButton
+                  variant="soft"
+                  color="neutral"
                   icon="i-heroicons-pencil-square-20-solid"
                   label="Edit"
                   size="sm"
