@@ -180,6 +180,56 @@ async function main() {
   }
   console.log(`Seeded ${EXTRA_USERS.length} extra users`)
 
+  // 5. Seed sample items
+  const allLocations = await prisma.location.findMany({ select: { id: true, name: true } })
+  const locationByName = Object.fromEntries(allLocations.map((l) => [l.name, l.id]))
+
+  const central = locationByName['The Warren Center - Central']
+  const east = locationByName['The Warren Center - East']
+  const west = locationByName['The Warren Center - West']
+
+  const ITEMS = [
+    { name: 'iPad Pro #1', description: 'Silver, 12.9 inch, with case', locationId: central },
+    { name: 'iPad Pro #2', description: 'Space Gray, 11 inch', locationId: east },
+    { name: 'Therapy Ball - Large', description: 'Blue, 75cm diameter', locationId: central },
+    {
+      name: 'Projector',
+      description: 'Epson portable projector with HDMI cable',
+      locationId: west,
+    },
+    {
+      name: 'Laptop Cart',
+      description: 'Rolling cart with charging station, holds 10 laptops',
+      locationId: east,
+    },
+    { name: 'First Aid Kit', description: 'Wall-mounted, fully stocked', locationId: central },
+    { name: 'Audio System', description: 'Bluetooth speaker and microphone set', locationId: west },
+    {
+      name: 'Therapy Swing',
+      description: 'Indoor sensory swing, ceiling-mounted',
+      locationId: east,
+    },
+  ]
+
+  // Delete existing seeded items to allow re-seeding
+  await prisma.item.deleteMany({
+    where: { name: { in: ITEMS.map((i) => i.name) } },
+  })
+
+  for (const item of ITEMS) {
+    await prisma.item.create({
+      data: {
+        name: item.name,
+        description: item.description,
+        condition: 'good',
+        status: 'available',
+        homeLocationId: item.locationId,
+        currentLocationId: item.locationId,
+      },
+    })
+  }
+  console.log(`Seeded ${ITEMS.length} items`)
+
   console.log('Seeding finished.')
 }
 
