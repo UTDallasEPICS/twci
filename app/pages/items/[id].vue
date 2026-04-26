@@ -49,6 +49,12 @@
   // Fetch locations for edit form
   const { data: locations } = await useFetch('/api/locations')
 
+  // Fetch users for checkout modal (admin/supervisor only)
+  const { data: users } = await useFetch('/api/users', {
+    immediate: isAdminOrSupervisor.value,
+    watch: false,
+  })
+
   // Edit modal
   const isEditOpen = ref(false)
   const isSubmitting = ref(false)
@@ -99,6 +105,51 @@
       toast.add({ title: 'Error', description: message, color: 'error' })
     } finally {
       isSubmitting.value = false
+    }
+  }
+
+  // Checkout modal
+  const isCheckoutOpen = ref(false)
+  const isCheckingOut = ref(false)
+  const selectedUserId = ref('')
+
+  const userOptions = computed(() =>
+    (users.value ?? []).map((u: { id: string; displayName: string; email: string }) => ({
+      label: `${u.displayName} (${u.email})`,
+      value: u.id,
+    }))
+  )
+
+  const selectedUser = computed(() =>
+    (users.value ?? []).find((u: { id: string; status: string }) => u.id === selectedUserId.value)
+  )
+
+  function openCheckout() {
+    selectedUserId.value = ''
+    isCheckoutOpen.value = true
+  }
+
+  async function handleCheckout() {
+    isCheckingOut.value = true
+    try {
+      const result = await $fetch<{ warning?: string }>(`/api/items/${id}/checkout`, {
+        method: 'POST',
+        body: { userId: selectedUserId.value },
+      })
+      toast.add({ title: 'Item checked out', color: 'success' })
+      if (result.warning) {
+        toast.add({ title: 'Warning', description: result.warning, color: 'warning' })
+      }
+      isCheckoutOpen.value = false
+      await refresh()
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === 'object' && 'statusMessage' in err
+          ? (err as { statusMessage: string }).statusMessage
+          : 'Something went wrong'
+      toast.add({ title: 'Error', description: message, color: 'error' })
+    } finally {
+      isCheckingOut.value = false
     }
   }
 
@@ -237,8 +288,7 @@
                   icon="i-heroicons-arrow-right-circle-20-solid"
                   label="Check Out"
                   size="sm"
-                  disabled
-                  title="Coming soon"
+                  @click="openCheckout"
                 />
                 <UButton
                   v-else-if="item.status === 'checked_out'"
@@ -381,6 +431,58 @@
         </div>
       </UCard>
     </template>
+
+    <!-- Checkout Modal -->
+    <UModal v-model:open="isCheckoutOpen">
+      <template #content>
+        <div class="p-6">
+          <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Check Out Item</h3>
+
+          <div class="mb-4 space-y-2">
+            <div>
+              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Item</p>
+              <p class="text-gray-900 dark:text-white">{{ item?.name }}</p>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">From Location</p>
+              <p class="text-gray-900 dark:text-white">{{ item?.currentLocation.name }}</p>
+            </div>
+          </div>
+
+          <UFormField label="Check out to" name="userId" required class="mb-4">
+            <USelect
+              v-model="selectedUserId"
+              :items="userOptions"
+              placeholder="Select a user..."
+              class="w-full"
+            />
+          </UFormField>
+
+          <UAlert
+            v-if="selectedUser?.status === 'on_leave'"
+            class="mb-4"
+            icon="i-heroicons-exclamation-triangle-20-solid"
+            color="warning"
+            variant="subtle"
+            title="This user is currently on leave"
+          />
+
+          <div class="flex justify-end gap-2">
+            <UButton variant="soft" color="neutral" @click="isCheckoutOpen = false">
+              Cancel
+            </UButton>
+            <UButton
+              color="primary"
+              :loading="isCheckingOut"
+              :disabled="!selectedUserId"
+              @click="handleCheckout"
+            >
+              Check Out
+            </UButton>
+          </div>
+        </div>
+      </template>
+    </UModal>
 
     <!-- Edit Modal -->
     <UModal v-model:open="isEditOpen">
