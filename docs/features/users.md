@@ -12,14 +12,15 @@ See [data-model.md](../data-model.md) for the full `User` schema.
 
 Four name fields are stored:
 
-| Field | Required | Notes |
-|---|---|---|
-| legalFirstName | Yes | From roster "Legal Name" column (parsed) |
-| legalLastName | Yes | From roster "Legal Name" column (parsed) |
-| preferredFirstName | No | From roster "Preferred or Chosen First Name" column |
-| preferredLastName | No | From roster "Preferred or Chosen Last Name" column |
+| Field              | Required | Notes                                               |
+| ------------------ | -------- | --------------------------------------------------- |
+| legalFirstName     | Yes      | From roster "Legal Name" column (parsed)            |
+| legalLastName      | Yes      | From roster "Legal Name" column (parsed)            |
+| preferredFirstName | No       | From roster "Preferred or Chosen First Name" column |
+| preferredLastName  | No       | From roster "Preferred or Chosen Last Name" column  |
 
 **Display name logic**: Use preferred name when available, fall back to legal name.
+
 - Display first: `preferredFirstName ?? legalFirstName`
 - Display last: `preferredLastName ?? legalLastName`
 
@@ -27,33 +28,33 @@ Better Auth's `name` field is set to the computed display name: `"${displayFirst
 
 ### Roles
 
-| Role | Description |
-|---|---|
-| `admin` | Full access. CRUD everything. Check in/out. |
-| `supervisor` | Check in/out items. Read all data. |
-| `employee` | Read-only. Items checked in/out *for* them. |
+| Role         | Description                                 |
+| ------------ | ------------------------------------------- |
+| `admin`      | Full access. CRUD everything. Check in/out. |
+| `supervisor` | Check in/out items. Read all data.          |
+| `employee`   | Read-only. Items checked in/out _for_ them. |
 
 ### Statuses
 
-| Status | Can log in? | Description |
-|---|---|---|
-| `active` | Yes | Normal access |
-| `on_leave` | Yes | Can log in (e.g., to return items). UI shows indicator. |
-| `inactive` | No | Blocked from login. Must be reactivated by admin. |
+| Status     | Can log in? | Description                                             |
+| ---------- | ----------- | ------------------------------------------------------- |
+| `active`   | Yes         | Normal access                                           |
+| `on_leave` | Yes         | Can log in (e.g., to return items). UI shows indicator. |
+| `inactive` | No          | Blocked from login. Must be reactivated by admin.       |
 
 All status transitions are allowed (admin can move a user between any status).
 
 ## Permissions
 
-| Action | Admin | Supervisor | Employee |
-|---|---|---|---|
-| View user list | Yes | Yes | No |
-| View user detail | Yes | Yes | Own profile only |
-| Create user | Yes | No | No |
-| Edit user | Yes | No | No |
-| Delete user | Yes | No | No |
-| Change user role | Yes | No | No |
-| Change user status | Yes | No | No |
+| Action             | Admin | Supervisor | Employee         |
+| ------------------ | ----- | ---------- | ---------------- |
+| View user list     | Yes   | Yes        | No               |
+| View user detail   | Yes   | Yes        | Own profile only |
+| Create user        | Yes   | No         | No               |
+| Edit user          | Yes   | No         | No               |
+| Delete user        | Yes   | No         | No               |
+| Change user role   | Yes   | No         | No               |
+| Change user status | Yes   | No         | No               |
 
 ## Admin User Management
 
@@ -61,8 +62,9 @@ All status transitions are allowed (admin can move a user between any status).
 
 **Route**: `/users`
 
-- Table of all users with: display name, email, role badge, status badge
+- Card list of all users with: avatar, display name, email, role badge, status badge
 - Filterable by role and status
+- Sortable: Name A-Z, Name Z-A, Newest first, Oldest first, Recently updated
 - Searchable by name or email
 - Admin sees "Add User" button and edit actions per row
 
@@ -71,15 +73,17 @@ All status transitions are allowed (admin can move a user between any status).
 **Route**: `/users/[id]`
 
 Displays:
+
 - Legal name and preferred name (if different)
 - Email, role, status
 - Profile picture (existing feature)
-- Checkout history (items currently held + past checkouts)
-- Admin: edit button, role/status controls
+- Checkout history placeholder (will show items once check-in/out is implemented in #7-#9)
+- Admin: edit button, delete button, role/status controls
 
 ### Create User Form
 
 Fields:
+
 - Legal first name (required)
 - Legal last name (required)
 - Preferred first name (optional)
@@ -98,19 +102,20 @@ Deleting a user with open checkouts should be blocked — items must be checked 
 
 ## Employee Self-Service
 
-Employees can view their own profile at `/profile` or `/users/me`:
+Employees can view their own profile at `/profile`:
+
 - See their name, email, role, status
-- See their checkout history (what they currently have, what they've returned)
-- Upload/change profile picture (existing feature)
+- Upload/change profile picture
+- Logout button
 
 ## API Routes
 
-| Method | Route | Description | Role |
-|---|---|---|---|
-| GET | `/api/users` | List all users | Admin, Supervisor |
-| GET | `/api/users/[id]` | Get user detail | Admin, Supervisor, or own profile |
-| POST | `/api/users` | Create user | Admin |
-| PUT | `/api/users/[id]` | Update user | Admin |
-| DELETE | `/api/users/[id]` | Delete user (blocked if open checkouts) | Admin |
-| GET | `/api/users/me` | Get current user's profile | All |
-| GET | `/api/users/[id]/history` | User's checkout history | Admin, Supervisor, or own history |
+| Method | Route                     | Description                                            | Role                              |
+| ------ | ------------------------- | ------------------------------------------------------ | --------------------------------- |
+| GET    | `/api/users`              | List all users                                         | Admin, Supervisor                 |
+| GET    | `/api/users/[id]`         | Get user detail                                        | Admin, Supervisor, or own profile |
+| POST   | `/api/users`              | Create user                                            | Admin                             |
+| PUT    | `/api/users/[id]`         | Update user                                            | Admin                             |
+| DELETE | `/api/users/[id]`         | Delete user (blocked if open checkouts)                | Admin                             |
+| GET    | `/api/users/me`           | Get current user's profile                             | All                               |
+| GET    | `/api/users/[id]/history` | User's checkout history (not yet implemented — see #9) | Admin, Supervisor, or own history |
