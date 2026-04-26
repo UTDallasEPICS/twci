@@ -23,6 +23,31 @@ export default defineEventHandler(async (event) => {
       preferredLastName: true,
       createdAt: true,
       updatedAt: true,
+      itemsHeld: {
+        orderBy: { checkedOutAt: 'desc' },
+        take: 10,
+        select: {
+          id: true,
+          checkedOutAt: true,
+          checkedInAt: true,
+          conditionOnReturn: true,
+          item: {
+            select: { id: true, name: true },
+          },
+          checkedOutByUser: {
+            select: { id: true, name: true },
+          },
+          checkedOutFromLocation: {
+            select: { id: true, name: true },
+          },
+          checkedInByUser: {
+            select: { id: true, name: true },
+          },
+          checkedInAtLocation: {
+            select: { id: true, name: true },
+          },
+        },
+      },
     },
   })
 
@@ -34,5 +59,17 @@ export default defineEventHandler(async (event) => {
     ...user,
     displayName: getDisplayName(user),
     image: user.image != null,
+    checkoutHistory: user.itemsHeld.map((log) => ({
+      id: log.id,
+      item: log.item,
+      checkedOutBy: log.checkedOutByUser,
+      checkedOutFromLocation: log.checkedOutFromLocation,
+      checkedOutAt: log.checkedOutAt,
+      checkedInBy: log.checkedInByUser,
+      checkedInAtLocation: log.checkedInAtLocation,
+      checkedInAt: log.checkedInAt,
+      conditionOnReturn: log.conditionOnReturn,
+      isOpen: log.checkedInAt === null,
+    })),
   }
 })
