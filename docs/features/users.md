@@ -77,7 +77,8 @@ Displays:
 - Legal name and preferred name (if different)
 - Email, role, status
 - Profile picture (existing feature)
-- Checkout history placeholder (will show items once check-in/out is implemented in #7-#9)
+- Checkout history split into "Currently Holding" (open checkouts, highlighted) and "Past Checkouts" (completed, newest first)
+- Lazy-loaded full history via "View all history" button when 10+ records
 - Admin: edit button, role/status controls (set to `inactive` to deactivate)
 
 ### Create User Form
@@ -106,15 +107,16 @@ Employees can view their own profile at `/profile`:
 
 - See their name, email, role, status
 - Upload/change profile picture
+- Checkout history split into "Currently Holding" and "Past Checkouts" (fetched from `/api/users/[id]/history`)
 - Logout button
 
 ## API Routes
 
-| Method | Route                     | Description                                            | Role                              |
-| ------ | ------------------------- | ------------------------------------------------------ | --------------------------------- |
-| GET    | `/api/users`              | List all users                                         | Admin, Supervisor                 |
-| GET    | `/api/users/[id]`         | Get user detail                                        | Admin, Supervisor, or own profile |
-| POST   | `/api/users`              | Create user                                            | Admin                             |
-| PUT    | `/api/users/[id]`         | Update user                                            | Admin                             |
-| GET    | `/api/users/me`           | Get current user's profile                             | All                               |
-| GET    | `/api/users/[id]/history` | User's checkout history (not yet implemented — see #9) | Admin, Supervisor, or own history |
+| Method | Route                     | Description                | Role                              |
+| ------ | ------------------------- | -------------------------- | --------------------------------- |
+| GET    | `/api/users`              | List all users             | Admin, Supervisor                 |
+| GET    | `/api/users/[id]`         | Get user detail            | Admin, Supervisor, or own profile |
+| POST   | `/api/users`              | Create user                | Admin                             |
+| PUT    | `/api/users/[id]`         | Update user                | Admin                             |
+| GET    | `/api/users/me`           | Get current user's profile | All                               |
+| GET    | `/api/users/[id]/history` | User's checkout history    | Admin, Supervisor, or own history |

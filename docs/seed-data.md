@@ -2,7 +2,7 @@
 
 ## Overview
 
-The seed script (`prisma/seed.ts`) populates the database with locations and users from the employee roster. This runs as part of `pnpm prisma:reset`.
+The seed script (`prisma/seed.ts`) populates the database with locations, users, items, and checkout logs. This runs as part of `pnpm prisma:reset`.
 
 ## Locations
 
@@ -31,14 +31,14 @@ const locations = [
 
 `roster.csv` at the project root. 100 rows with columns:
 
-| CSV Column | Maps To |
-|---|---|
-| Legal Name | Parsed into `legalFirstName` + `legalLastName` |
-| Preferred or Chosen First Name | `preferredFirstName` (nullable) |
-| Preferred or Chosen Last Name | `preferredLastName` (nullable) |
-| Work Contact: Work Email | `email` |
-| Position Status | `status` (`Active` → `active`, `Leave` → `on_leave`) |
-| Job Title Description | Not stored (informational only, for now) |
+| CSV Column                     | Maps To                                              |
+| ------------------------------ | ---------------------------------------------------- |
+| Legal Name                     | Parsed into `legalFirstName` + `legalLastName`       |
+| Preferred or Chosen First Name | `preferredFirstName` (nullable)                      |
+| Preferred or Chosen Last Name  | `preferredLastName` (nullable)                       |
+| Work Contact: Work Email       | `email`                                              |
+| Position Status                | `status` (`Active` → `active`, `Leave` → `on_leave`) |
+| Job Title Description          | Not stored (informational only, for now)             |
 
 ### Parsing Legal Name
 
@@ -48,7 +48,7 @@ The CSV stores legal name as `"LastName, FirstName"`. The seed script must split
 // "Abernathy, Christopher" → legalFirstName: "Christopher", legalLastName: "Abernathy"
 // "Hernandez Kilpatrick, Hilda" → legalFirstName: "Hilda", legalLastName: "Hernandez Kilpatrick"
 // "Almeyda Noriega, Irma" → legalFirstName: "Irma", legalLastName: "Almeyda Noriega"
-const [lastName, firstName] = legalName.split(',').map(s => s.trim())
+const [lastName, firstName] = legalName.split(',').map((s) => s.trim())
 ```
 
 ### Display Name Computation
@@ -63,13 +63,13 @@ const name = `${displayFirst} ${displayLast}`
 
 ### Role Assignments
 
-| Email | Role |
-|---|---|
-| `brandy.lindsey@thewarrencenter.org` | `admin` |
-| `isabel.saenz@thewarrencenter.org` | `admin` |
-| `reachtusharwani@gmail.com` | `admin` |
-| `tmw220003@utdallas.edu` | `supervisor` |
-| All other roster emails | `employee` |
+| Email                                | Role         |
+| ------------------------------------ | ------------ |
+| `brandy.lindsey@thewarrencenter.org` | `admin`      |
+| `isabel.saenz@thewarrencenter.org`   | `admin`      |
+| `reachtusharwani@gmail.com`          | `admin`      |
+| `tmw220003@utdallas.edu`             | `supervisor` |
+| All other roster emails              | `employee`   |
 
 Tushar Wani (`reachtusharwani@gmail.com`) is not in the roster CSV and must be added manually in the seed:
 
@@ -98,9 +98,9 @@ The supervisor seed user (`tmw220003@utdallas.edu`):
 ### Status Mapping
 
 | CSV Position Status | User Status |
-|---|---|
-| `Active` | `active` |
-| `Leave` | `on_leave` |
+| ------------------- | ----------- |
+| `Active`            | `active`    |
+| `Leave`             | `on_leave`  |
 
 Currently only Amanda Johnston has `Leave` status in the roster.
 
@@ -123,3 +123,44 @@ Some roster entries have quirks the parser must handle:
 - **Empty preferred name fields**: Most rows have empty preferred names — these become `null`
 - **Email doesn't match name**: Some emails use maiden/preferred names (e.g., `Bobo, Ashlyn` has email `ashlyn.smith@thewarrencenter.org`). The email is authoritative for login; names are for display.
 - **Multi-word last names**: `"Hernandez Kilpatrick, Hilda"`, `"Wilson Martin, Laquasha"` — split only on the first comma
+
+## Items
+
+8 sample items are seeded across the three locations:
+
+| Item                 | Location |
+| -------------------- | -------- |
+| iPad Pro #1          | Central  |
+| iPad Pro #2          | East     |
+| Therapy Ball - Large | Central  |
+| Projector            | West     |
+| Laptop Cart          | East     |
+| First Aid Kit        | Central  |
+| Audio System         | West     |
+| Therapy Swing        | East     |
+
+All items start with condition `good` and status `available`. Existing seed items are deleted and re-created on each run (not upserted) to ensure clean state.
+
+## Checkout Logs
+
+8 checkout logs are seeded to populate the dashboard and history views:
+
+**Open checkouts** (4 items currently checked out):
+
+| Item         | Days Out | Purpose               |
+| ------------ | -------- | --------------------- |
+| iPad Pro #1  | ~3 days  | Green days-out badge  |
+| Laptop Cart  | ~5 days  | Green days-out badge  |
+| Projector    | ~12 days | Yellow days-out badge |
+| Audio System | ~35 days | Red days-out badge    |
+
+**Completed checkouts** (4 returned items):
+
+| Item                    | Notes                                        |
+| ----------------------- | -------------------------------------------- |
+| iPad Pro #2             | Returned in good condition, moved to Central |
+| Therapy Ball - Large    | Returned in fair condition                   |
+| Therapy Swing (cycle 1) | Returned in good condition                   |
+| Therapy Swing (cycle 2) | Returned in good condition, moved to West    |
+
+Checkout performers alternate between the admin (Brandy Lindsey) and supervisor (Isabel Saenz) seed users. Item holders are drawn from the first 6 active employees. All checkout logs are deleted and re-created on each seed run.
