@@ -111,7 +111,7 @@
   // Checkout modal
   const isCheckoutOpen = ref(false)
   const isCheckingOut = ref(false)
-  const selectedUserId = ref('')
+  const selectedUserOption = ref<{ label: string; value: string } | undefined>()
 
   const userOptions = computed(() =>
     (users.value ?? []).map((u: { id: string; displayName: string; email: string }) => ({
@@ -121,20 +121,23 @@
   )
 
   const selectedUser = computed(() =>
-    (users.value ?? []).find((u: { id: string; status: string }) => u.id === selectedUserId.value)
+    (users.value ?? []).find(
+      (u: { id: string; status: string }) => u.id === selectedUserOption.value?.value
+    )
   )
 
   function openCheckout() {
-    selectedUserId.value = ''
+    selectedUserOption.value = undefined
     isCheckoutOpen.value = true
   }
 
   async function handleCheckout() {
+    if (!selectedUserOption.value) return
     isCheckingOut.value = true
     try {
       const result = await $fetch<{ warning?: string }>(`/api/items/${id}/checkout`, {
         method: 'POST',
-        body: { userId: selectedUserId.value },
+        body: { userId: selectedUserOption.value.value },
       })
       toast.add({ title: 'Item checked out', color: 'success' })
       if (result.warning) {
@@ -450,9 +453,10 @@
           </div>
 
           <UFormField label="Check out to" name="userId" required class="mb-4">
-            <USelect
-              v-model="selectedUserId"
+            <USelectMenu
+              v-model="selectedUserOption"
               :items="userOptions"
+              :search-input="{ placeholder: 'Search by name or email...' }"
               placeholder="Select a user..."
               class="w-full"
             />
@@ -474,7 +478,7 @@
             <UButton
               color="primary"
               :loading="isCheckingOut"
-              :disabled="!selectedUserId"
+              :disabled="!selectedUserOption"
               @click="handleCheckout"
             >
               Check Out
