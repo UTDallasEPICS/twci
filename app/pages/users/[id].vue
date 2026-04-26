@@ -39,6 +39,31 @@
 
   const { data: user, pending, error, refresh } = await useFetch<UserDetail>(`/api/users/${id}`)
 
+  // Full history (lazy-loaded on demand)
+  type HistoryEntry = UserDetail['checkoutHistory'][number]
+  const showFullHistory = ref(false)
+  const {
+    data: fullHistory,
+    pending: historyPending,
+    execute: loadFullHistory,
+  } = await useFetch<HistoryEntry[]>(`/api/users/${id}/history`, {
+    immediate: false,
+    watch: false,
+  })
+
+  async function viewAllHistory() {
+    showFullHistory.value = true
+    await loadFullHistory()
+  }
+
+  const displayedHistory = computed(() => {
+    if (showFullHistory.value && fullHistory.value) return fullHistory.value
+    return user.value?.checkoutHistory ?? []
+  })
+
+  const currentlyHolding = computed(() => displayedHistory.value.filter((log) => log.isOpen))
+  const pastCheckouts = computed(() => displayedHistory.value.filter((log) => !log.isOpen))
+
   // Edit modal
   const isEditOpen = ref(false)
   const isSubmitting = ref(false)
@@ -235,45 +260,104 @@
             <h2 class="text-base font-semibold text-gray-900 dark:text-white">Checkout History</h2>
           </div>
         </template>
-        <div v-if="!user.checkoutHistory.length" class="py-6 text-center text-gray-500">
+        <div
+          v-if="!displayedHistory.length && !historyPending"
+          class="py-6 text-center text-gray-500"
+        >
           No checkout history yet.
         </div>
-        <div v-else class="space-y-3">
-          <div
-            v-for="log in user.checkoutHistory"
-            :key="log.id"
-            class="rounded-lg border p-3"
-            :class="
-              log.isOpen
-                ? 'border-primary-200 bg-primary-50 dark:border-primary-800 dark:bg-primary-950'
-                : 'border-gray-200 dark:border-gray-700'
-            "
-          >
-            <div class="flex items-center justify-between">
-              <div class="text-sm">
-                <NuxtLink
-                  :to="`/items/${log.item.id}`"
-                  class="text-primary-500 font-medium hover:underline"
-                >
-                  {{ log.item.name }}
-                </NuxtLink>
-                <span class="text-gray-500 dark:text-gray-400">
-                  &mdash; checked out by {{ log.checkedOutBy.name }} from
-                  {{ log.checkedOutFromLocation.name }}
-                </span>
+        <div v-else-if="historyPending" class="space-y-3">
+          <USkeleton class="h-16 w-full" />
+          <USkeleton class="h-16 w-full" />
+          <USkeleton class="h-16 w-full" />
+        </div>
+        <div v-else class="space-y-4">
+          <!-- Currently Holding -->
+          <div v-if="currentlyHolding.length">
+            <p
+              class="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+            >
+              Currently Holding
+            </p>
+            <div class="space-y-3">
+              <div
+                v-for="log in currentlyHolding"
+                :key="log.id"
+                class="border-primary-200 bg-primary-50 dark:border-primary-800 dark:bg-primary-950 rounded-lg border p-3"
+              >
+                <div class="flex items-center justify-between">
+                  <div class="text-sm">
+                    <NuxtLink
+                      :to="`/items/${log.item.id}`"
+                      class="text-primary-500 font-medium hover:underline"
+                    >
+                      {{ log.item.name }}
+                    </NuxtLink>
+                    <span class="text-gray-500 dark:text-gray-400">
+                      &mdash; checked out by {{ log.checkedOutBy.name }} from
+                      {{ log.checkedOutFromLocation.name }}
+                    </span>
+                  </div>
+                  <UBadge color="warning" variant="subtle" size="sm"> open </UBadge>
+                </div>
+                <div class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                  Out: {{ formatDate(log.checkedOutAt) }}
+                </div>
               </div>
-              <UBadge v-if="log.isOpen" color="warning" variant="subtle" size="sm"> open </UBadge>
             </div>
-            <div class="mt-1 text-xs text-gray-400 dark:text-gray-500">
-              Out: {{ formatDate(log.checkedOutAt) }}
-              <template v-if="log.checkedInAt">
-                &bull; In: {{ formatDate(log.checkedInAt) }} at
-                {{ log.checkedInAtLocation?.name }} by {{ log.checkedInBy?.name }}
-                <template v-if="log.conditionOnReturn">
-                  &bull; Condition: {{ log.conditionOnReturn }}
-                </template>
-              </template>
+          </div>
+
+          <!-- Past Checkouts -->
+          <div v-if="pastCheckouts.length">
+            <p
+              class="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+            >
+              Past Checkouts
+            </p>
+            <div class="space-y-3">
+              <div
+                v-for="log in pastCheckouts"
+                :key="log.id"
+                class="rounded-lg border border-gray-200 p-3 dark:border-gray-700"
+              >
+                <div class="text-sm">
+                  <NuxtLink
+                    :to="`/items/${log.item.id}`"
+                    class="text-primary-500 font-medium hover:underline"
+                  >
+                    {{ log.item.name }}
+                  </NuxtLink>
+                  <span class="text-gray-500 dark:text-gray-400">
+                    &mdash; checked out by {{ log.checkedOutBy.name }} from
+                    {{ log.checkedOutFromLocation.name }}
+                  </span>
+                </div>
+                <div class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                  Out: {{ formatDate(log.checkedOutAt) }}
+                  <template v-if="log.checkedInAt">
+                    &bull; In: {{ formatDate(log.checkedInAt) }} at
+                    {{ log.checkedInAtLocation?.name }} by {{ log.checkedInBy?.name }}
+                    <template v-if="log.conditionOnReturn">
+                      &bull; Condition: {{ log.conditionOnReturn }}
+                    </template>
+                  </template>
+                </div>
+              </div>
             </div>
+          </div>
+
+          <div
+            v-if="!showFullHistory && user.checkoutHistory.length >= 10"
+            class="pt-2 text-center"
+          >
+            <UButton
+              variant="soft"
+              color="neutral"
+              size="sm"
+              label="View all history"
+              icon="i-heroicons-clock-20-solid"
+              @click="viewAllHistory"
+            />
           </div>
         </div>
       </UCard>
