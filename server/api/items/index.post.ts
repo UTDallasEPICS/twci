@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import { z } from 'zod'
 
 const createItemSchema = z.object({
@@ -36,14 +37,18 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  const itemId = randomUUID()
+
   const item = await prisma.item.create({
     data: {
+      id: itemId,
       name: parsed.data.name,
       description: parsed.data.description ?? null,
       condition: parsed.data.condition,
       status: 'available',
       homeLocationId: parsed.data.locationId,
       currentLocationId: parsed.data.locationId,
+      qrCodeUrl: `/api/items/${itemId}/qr`,
     },
     select: {
       id: true,
@@ -51,6 +56,7 @@ export default defineEventHandler(async (event) => {
       description: true,
       condition: true,
       status: true,
+      qrCodeUrl: true,
       createdAt: true,
       homeLocation: {
         select: { id: true, name: true },
