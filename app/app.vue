@@ -18,7 +18,6 @@
   const navLinks = computed(() => {
     if (!isLoggedIn.value) return []
     const links = [
-      { to: '/', label: 'Dashboard', icon: 'i-heroicons-home-20-solid' },
       { to: '/locations', label: 'Locations', icon: 'i-heroicons-map-pin-20-solid' },
       { to: '/items', label: 'Items', icon: 'i-heroicons-cube-20-solid' },
     ]
