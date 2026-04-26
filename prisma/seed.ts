@@ -212,183 +212,194 @@ async function main() {
   ]
 
   // Delete existing seeded items to allow re-seeding
-  await prisma.item.deleteMany({
-    where: { name: { in: ITEMS.map((i) => i.name) } },
-  })
+  // Removed deleteMany to make seed safe for production
+  // await prisma.item.deleteMany({
+  //   where: { name: { in: ITEMS.map((i) => i.name) } },
+  // })
 
   for (const item of ITEMS) {
-    await prisma.item.create({
-      data: {
-        name: item.name,
-        description: item.description,
-        condition: 'good',
-        status: 'available',
-        homeLocationId: item.locationId,
-        currentLocationId: item.locationId,
-      },
+    const exists = await prisma.item.findFirst({
+      where: { name: item.name, description: item.description },
     })
+
+    if (!exists) {
+      await prisma.item.create({
+        data: {
+          name: item.name,
+          description: item.description,
+          condition: 'good',
+          status: 'available',
+          homeLocationId: item.locationId,
+          currentLocationId: item.locationId,
+        },
+      })
+    }
   }
   console.log(`Seeded ${ITEMS.length} items`)
 
   // 6. Seed checkout logs
-  // Clean up existing seed checkout logs
-  await prisma.checkoutLog.deleteMany({})
+  // Check if we already have logs to prevent duplicating seed logs
+  const existingLogsCount = await prisma.checkoutLog.count()
 
-  const allItems = await prisma.item.findMany({ select: { id: true, name: true } })
-  const itemByName = Object.fromEntries(allItems.map((i) => [i.name, i.id]))
+  if (existingLogsCount === 0) {
+    const allItems = await prisma.item.findMany({ select: { id: true, name: true } })
+    const itemByName = Object.fromEntries(allItems.map((i) => [i.name, i.id]))
 
-  // Grab some users to use as holders and performers
-  const adminUser = await prisma.user.findFirst({
-    where: { email: 'brandy.lindsey@thewarrencenter.org' },
-    select: { id: true },
-  })
-  const supervisorUser = await prisma.user.findFirst({
-    where: { email: 'isabel.saenz@thewarrencenter.org' },
-    select: { id: true },
-  })
-  const employees = await prisma.user.findMany({
-    where: { role: 'employee', status: 'active' },
-    select: { id: true },
-    take: 6,
-  })
-
-  if (adminUser && supervisorUser && employees.length >= 6) {
-    const now = Date.now()
-    const day = 86_400_000
-
-    // --- Open checkouts (items currently checked out) ---
-
-    // iPad Pro #1 — checked out 3 days ago (green badge)
-    await prisma.checkoutLog.create({
-      data: {
-        itemId: itemByName['iPad Pro #1'],
-        userId: employees[0].id,
-        checkedOutBy: adminUser.id,
-        checkedOutFromLocationId: central,
-        checkedOutAt: new Date(now - 3 * day),
-      },
+    // Grab some users to use as holders and performers
+    const adminUser = await prisma.user.findFirst({
+      where: { email: 'brandy.lindsey@thewarrencenter.org' },
+      select: { id: true },
     })
-    await prisma.item.update({
-      where: { id: itemByName['iPad Pro #1'] },
-      data: { status: 'checked_out' },
+    const supervisorUser = await prisma.user.findFirst({
+      where: { email: 'isabel.saenz@thewarrencenter.org' },
+      select: { id: true },
+    })
+    const employees = await prisma.user.findMany({
+      where: { role: 'employee', status: 'active' },
+      select: { id: true },
+      take: 6,
     })
 
-    // Projector — checked out 12 days ago (yellow badge)
-    await prisma.checkoutLog.create({
-      data: {
-        itemId: itemByName['Projector'],
-        userId: employees[1].id,
-        checkedOutBy: supervisorUser.id,
-        checkedOutFromLocationId: west,
-        checkedOutAt: new Date(now - 12 * day),
-      },
-    })
-    await prisma.item.update({
-      where: { id: itemByName['Projector'] },
-      data: { status: 'checked_out' },
-    })
+    if (adminUser && supervisorUser && employees.length >= 6) {
+      const now = Date.now()
+      const day = 86_400_000
 
-    // Audio System — checked out 35 days ago (red badge)
-    await prisma.checkoutLog.create({
-      data: {
-        itemId: itemByName['Audio System'],
-        userId: employees[2].id,
-        checkedOutBy: adminUser.id,
-        checkedOutFromLocationId: west,
-        checkedOutAt: new Date(now - 35 * day),
-      },
-    })
-    await prisma.item.update({
-      where: { id: itemByName['Audio System'] },
-      data: { status: 'checked_out' },
-    })
+      // --- Open checkouts (items currently checked out) ---
 
-    // Laptop Cart — checked out 5 days ago (green badge)
-    await prisma.checkoutLog.create({
-      data: {
-        itemId: itemByName['Laptop Cart'],
-        userId: employees[3].id,
-        checkedOutBy: adminUser.id,
-        checkedOutFromLocationId: east,
-        checkedOutAt: new Date(now - 5 * day),
-      },
-    })
-    await prisma.item.update({
-      where: { id: itemByName['Laptop Cart'] },
-      data: { status: 'checked_out' },
-    })
+      // iPad Pro #1 — checked out 3 days ago (green badge)
+      await prisma.checkoutLog.create({
+        data: {
+          itemId: itemByName['iPad Pro #1'],
+          userId: employees[0].id,
+          checkedOutBy: adminUser.id,
+          checkedOutFromLocationId: central,
+          checkedOutAt: new Date(now - 3 * day),
+        },
+      })
+      await prisma.item.update({
+        where: { id: itemByName['iPad Pro #1'] },
+        data: { status: 'checked_out' },
+      })
 
-    // --- Completed checkouts (for history views) ---
+      // Projector — checked out 12 days ago (yellow badge)
+      await prisma.checkoutLog.create({
+        data: {
+          itemId: itemByName['Projector'],
+          userId: employees[1].id,
+          checkedOutBy: supervisorUser.id,
+          checkedOutFromLocationId: west,
+          checkedOutAt: new Date(now - 12 * day),
+        },
+      })
+      await prisma.item.update({
+        where: { id: itemByName['Projector'] },
+        data: { status: 'checked_out' },
+      })
 
-    // iPad Pro #2 — was checked out 20 days ago, returned 14 days ago
-    await prisma.checkoutLog.create({
-      data: {
-        itemId: itemByName['iPad Pro #2'],
-        userId: employees[4].id,
-        checkedOutBy: adminUser.id,
-        checkedOutFromLocationId: east,
-        checkedOutAt: new Date(now - 20 * day),
-        checkedInBy: supervisorUser.id,
-        checkedInAtLocationId: central,
-        checkedInAt: new Date(now - 14 * day),
-        conditionOnReturn: 'good',
-      },
-    })
+      // Audio System — checked out 35 days ago (red badge)
+      await prisma.checkoutLog.create({
+        data: {
+          itemId: itemByName['Audio System'],
+          userId: employees[2].id,
+          checkedOutBy: adminUser.id,
+          checkedOutFromLocationId: west,
+          checkedOutAt: new Date(now - 35 * day),
+        },
+      })
+      await prisma.item.update({
+        where: { id: itemByName['Audio System'] },
+        data: { status: 'checked_out' },
+      })
 
-    // Therapy Ball — was checked out 30 days ago, returned 25 days ago with fair condition
-    await prisma.checkoutLog.create({
-      data: {
-        itemId: itemByName['Therapy Ball - Large'],
-        userId: employees[5].id,
-        checkedOutBy: supervisorUser.id,
-        checkedOutFromLocationId: central,
-        checkedOutAt: new Date(now - 30 * day),
-        checkedInBy: adminUser.id,
-        checkedInAtLocationId: central,
-        checkedInAt: new Date(now - 25 * day),
-        conditionOnReturn: 'fair',
-      },
-    })
-    await prisma.item.update({
-      where: { id: itemByName['Therapy Ball - Large'] },
-      data: { condition: 'fair' },
-    })
+      // Laptop Cart — checked out 5 days ago (green badge)
+      await prisma.checkoutLog.create({
+        data: {
+          itemId: itemByName['Laptop Cart'],
+          userId: employees[3].id,
+          checkedOutBy: adminUser.id,
+          checkedOutFromLocationId: east,
+          checkedOutAt: new Date(now - 5 * day),
+        },
+      })
+      await prisma.item.update({
+        where: { id: itemByName['Laptop Cart'] },
+        data: { status: 'checked_out' },
+      })
 
-    // Therapy Swing — two cycles: checked out 45 days ago, returned 40 days ago, then again 15 days ago, returned 10 days ago
-    await prisma.checkoutLog.create({
-      data: {
-        itemId: itemByName['Therapy Swing'],
-        userId: employees[0].id,
-        checkedOutBy: adminUser.id,
-        checkedOutFromLocationId: east,
-        checkedOutAt: new Date(now - 45 * day),
-        checkedInBy: adminUser.id,
-        checkedInAtLocationId: east,
-        checkedInAt: new Date(now - 40 * day),
-        conditionOnReturn: 'good',
-      },
-    })
-    await prisma.checkoutLog.create({
-      data: {
-        itemId: itemByName['Therapy Swing'],
-        userId: employees[2].id,
-        checkedOutBy: supervisorUser.id,
-        checkedOutFromLocationId: east,
-        checkedOutAt: new Date(now - 15 * day),
-        checkedInBy: adminUser.id,
-        checkedInAtLocationId: west,
-        checkedInAt: new Date(now - 10 * day),
-        conditionOnReturn: 'good',
-      },
-    })
-    await prisma.item.update({
-      where: { id: itemByName['Therapy Swing'] },
-      data: { currentLocationId: west },
-    })
+      // --- Completed checkouts (for history views) ---
 
-    console.log('Seeded 8 checkout logs (4 open, 4 completed)')
+      // iPad Pro #2 — was checked out 20 days ago, returned 14 days ago
+      await prisma.checkoutLog.create({
+        data: {
+          itemId: itemByName['iPad Pro #2'],
+          userId: employees[4].id,
+          checkedOutBy: adminUser.id,
+          checkedOutFromLocationId: east,
+          checkedOutAt: new Date(now - 20 * day),
+          checkedInBy: supervisorUser.id,
+          checkedInAtLocationId: central,
+          checkedInAt: new Date(now - 14 * day),
+          conditionOnReturn: 'good',
+        },
+      })
+
+      // Therapy Ball — was checked out 30 days ago, returned 25 days ago with fair condition
+      await prisma.checkoutLog.create({
+        data: {
+          itemId: itemByName['Therapy Ball - Large'],
+          userId: employees[5].id,
+          checkedOutBy: supervisorUser.id,
+          checkedOutFromLocationId: central,
+          checkedOutAt: new Date(now - 30 * day),
+          checkedInBy: adminUser.id,
+          checkedInAtLocationId: central,
+          checkedInAt: new Date(now - 25 * day),
+          conditionOnReturn: 'fair',
+        },
+      })
+      await prisma.item.update({
+        where: { id: itemByName['Therapy Ball - Large'] },
+        data: { condition: 'fair' },
+      })
+
+      // Therapy Swing — two cycles: checked out 45 days ago, returned 40 days ago, then again 15 days ago, returned 10 days ago
+      await prisma.checkoutLog.create({
+        data: {
+          itemId: itemByName['Therapy Swing'],
+          userId: employees[0].id,
+          checkedOutBy: adminUser.id,
+          checkedOutFromLocationId: east,
+          checkedOutAt: new Date(now - 45 * day),
+          checkedInBy: adminUser.id,
+          checkedInAtLocationId: east,
+          checkedInAt: new Date(now - 40 * day),
+          conditionOnReturn: 'good',
+        },
+      })
+      await prisma.checkoutLog.create({
+        data: {
+          itemId: itemByName['Therapy Swing'],
+          userId: employees[2].id,
+          checkedOutBy: supervisorUser.id,
+          checkedOutFromLocationId: east,
+          checkedOutAt: new Date(now - 15 * day),
+          checkedInBy: adminUser.id,
+          checkedInAtLocationId: west,
+          checkedInAt: new Date(now - 10 * day),
+          conditionOnReturn: 'good',
+        },
+      })
+      await prisma.item.update({
+        where: { id: itemByName['Therapy Swing'] },
+        data: { currentLocationId: west },
+      })
+
+      console.log('Seeded 8 checkout logs (4 open, 4 completed)')
+    } else {
+      console.log('Skipped checkout log seeding (required users not found)')
+    }
   } else {
-    console.log('Skipped checkout log seeding (required users not found)')
+    console.log(`Skipped checkout log seeding (found ${existingLogsCount} existing logs)`)
   }
 
   console.log('Seeding finished.')
