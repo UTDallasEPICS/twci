@@ -229,12 +229,6 @@
               </p>
             </div>
           </div>
-          <div>
-            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Member Since</p>
-            <p class="text-gray-900 dark:text-white">
-              {{ new Date(user.createdAt).toLocaleDateString() }}
-            </p>
-          </div>
         </div>
       </UCard>
     </template>
