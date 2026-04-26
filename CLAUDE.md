@@ -24,7 +24,7 @@ Nuxt 4 template app with Better Auth (email OTP authentication), Prisma ORM, SQL
 - **Auth client**: `app/utils/auth-client.ts` — Better Auth Vue client with emailOTP plugin
 - **Global auth middleware**: `app/middleware/auth.global.ts` — redirects unauthenticated users to `/auth`, authenticated users away from `/auth`
 - **Header**: `UHeader` component with `UNavigationMenu` — responsive hamburger menu on mobile (<lg), horizontal nav on desktop
-- **Pages**: `/auth` (email OTP login flow), `/` (dashboard with live stats and recent activity), `/items` (item list), `/items/[id]` (item detail with check-out/check-in modals and full checkout history), `/items/scan` (QR code landing page — redirects `?id=` to item detail), `/locations` (location list), `/locations/[id]` (location detail), `/users` (user list, admin/supervisor), `/users/[id]` (user detail with checkout history), `/checkouts` (open checkouts dashboard, admin/supervisor), `/profile` (self-service profile with checkout history)
+- **Pages**: `/auth` (email OTP login flow), `/` (dashboard with live stats and recent activity), `/items` (item list with batch-select print mode), `/items/[id]` (item detail with check-out/check-in modals and full checkout history), `/items/print-[id]` (single-item QR label print view with size selector), `/items/print` (batch QR label print view for multiple items), `/items/scan` (QR code landing page — redirects `?id=` to item detail), `/locations` (location list), `/locations/[id]` (location detail), `/users` (user list, admin/supervisor), `/users/[id]` (user detail with checkout history), `/checkouts` (open checkouts dashboard, admin/supervisor), `/profile` (self-service profile with checkout history)
 
 ### Backend (`server/`)
 

@@ -1,11 +1,51 @@
 <script setup lang="ts">
   import { z } from 'zod'
   import type { FormSubmitEvent } from '@nuxt/ui'
+  import type { LabelSize } from '~/composables/usePrintLabels'
+  import { labelSizeOptions } from '~/composables/usePrintLabels'
 
   const toast = useToast()
 
   const { data: session } = await authClient.useSession(useFetch)
   const isAdmin = computed(() => session.value?.user?.role === 'admin')
+
+  // Selection mode for batch printing
+  const isSelectMode = ref(false)
+  const selectedIds = ref(new Set<string>())
+  const printSize = ref<LabelSize>('medium')
+
+  const allSelected = computed(() => {
+    if (!items.value?.length) return false
+    return items.value.every((item) => selectedIds.value.has(item.id))
+  })
+
+  function toggleSelectMode() {
+    isSelectMode.value = !isSelectMode.value
+    selectedIds.value.clear()
+  }
+
+  function toggleSelectAll() {
+    if (allSelected.value) {
+      selectedIds.value.clear()
+    } else if (items.value) {
+      for (const item of items.value) {
+        selectedIds.value.add(item.id)
+      }
+    }
+  }
+
+  function toggleItem(id: string) {
+    if (selectedIds.value.has(id)) {
+      selectedIds.value.delete(id)
+    } else {
+      selectedIds.value.add(id)
+    }
+  }
+
+  function openBatchPrint() {
+    const ids = [...selectedIds.value].join(',')
+    navigateTo(`/items/print?ids=${ids}&size=${printSize.value}`)
+  }
 
   // Filters
   const statusFilter = ref<string>('all')
@@ -184,6 +224,13 @@
       </div>
       <div v-if="isAdmin" class="flex items-center gap-3">
         <UButton
+          variant="soft"
+          :color="isSelectMode ? 'primary' : 'neutral'"
+          icon="i-heroicons-printer-20-solid"
+          :label="isSelectMode ? 'Cancel' : 'Print Labels'"
+          @click="toggleSelectMode"
+        />
+        <UButton
           color="primary"
           icon="i-heroicons-plus-20-solid"
           label="Add Item"
@@ -225,6 +272,37 @@
       </UButtonGroup>
     </div>
 
+    <!-- Selection toolbar -->
+    <div
+      v-if="isSelectMode"
+      class="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800"
+    >
+      <label class="flex cursor-pointer items-center gap-2 text-sm">
+        <!-- eslint-disable-next-line vue/html-self-closing -->
+        <input type="checkbox" :checked="allSelected" class="rounded" @change="toggleSelectAll" />
+        Select all
+      </label>
+      <span class="text-sm text-gray-500 dark:text-gray-400">
+        {{ selectedIds.size }} selected
+      </span>
+      <select
+        v-model="printSize"
+        class="rounded-md border border-gray-300 px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-700"
+      >
+        <option v-for="opt in labelSizeOptions" :key="opt.value" :value="opt.value">
+          {{ opt.label }}
+        </option>
+      </select>
+      <UButton
+        color="primary"
+        icon="i-heroicons-printer-20-solid"
+        label="Print Selected"
+        size="sm"
+        :disabled="!selectedIds.size"
+        @click="openBatchPrint"
+      />
+    </div>
+
     <!-- Loading -->
     <UCard v-if="pending">
       <div class="space-y-4">
@@ -254,44 +332,56 @@
 
     <!-- Item list -->
     <div v-else class="space-y-3">
-      <NuxtLink v-for="item in items" :key="item.id" :to="`/items/${item.id}`" class="block">
-        <UCard
-          class="transition-shadow hover:shadow-md"
-          :class="{ 'opacity-60': item.condition === 'retired' }"
-        >
-          <div class="flex items-center justify-between">
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-2">
-                <p class="truncate font-medium text-gray-900 dark:text-white">{{ item.name }}</p>
-                <UBadge :color="conditionBadgeColor(item.condition)" variant="subtle" size="sm">
-                  {{ item.condition }}
-                </UBadge>
-                <UBadge :color="statusBadgeColor(item.status)" variant="subtle" size="sm">
-                  {{ statusLabel(item.status) }}
-                </UBadge>
+      <div v-for="item in items" :key="item.id" class="flex items-center gap-3">
+        <!-- eslint-disable-next-line vue/html-self-closing -->
+        <input
+          v-if="isSelectMode"
+          type="checkbox"
+          :checked="selectedIds.has(item.id)"
+          class="shrink-0 rounded"
+          @change="toggleItem(item.id)"
+        />
+        <NuxtLink :to="`/items/${item.id}`" class="block min-w-0 flex-1">
+          <UCard
+            class="transition-shadow hover:shadow-md"
+            :class="{ 'opacity-60': item.condition === 'retired' }"
+          >
+            <div class="flex items-center justify-between">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <p class="truncate font-medium text-gray-900 dark:text-white">
+                    {{ item.name }}
+                  </p>
+                  <UBadge :color="conditionBadgeColor(item.condition)" variant="subtle" size="sm">
+                    {{ item.condition }}
+                  </UBadge>
+                  <UBadge :color="statusBadgeColor(item.status)" variant="subtle" size="sm">
+                    {{ statusLabel(item.status) }}
+                  </UBadge>
+                </div>
+                <p
+                  v-if="item.description"
+                  class="mt-1 truncate text-sm text-gray-500 dark:text-gray-400"
+                >
+                  {{ item.description }}
+                </p>
+                <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                  {{ item.currentLocation.name }}
+                </p>
               </div>
-              <p
-                v-if="item.description"
-                class="mt-1 truncate text-sm text-gray-500 dark:text-gray-400"
-              >
-                {{ item.description }}
-              </p>
-              <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                {{ item.currentLocation.name }}
-              </p>
+              <div v-if="isAdmin && !isSelectMode" class="ml-4 flex shrink-0 items-center gap-2">
+                <UButton
+                  variant="ghost"
+                  color="neutral"
+                  icon="i-heroicons-pencil-square-20-solid"
+                  size="sm"
+                  @click.prevent="openEdit(item)"
+                />
+              </div>
             </div>
-            <div v-if="isAdmin" class="ml-4 flex shrink-0 items-center gap-2">
-              <UButton
-                variant="ghost"
-                color="neutral"
-                icon="i-heroicons-pencil-square-20-solid"
-                size="sm"
-                @click.prevent="openEdit(item)"
-              />
-            </div>
-          </div>
-        </UCard>
-      </NuxtLink>
+          </UCard>
+        </NuxtLink>
+      </div>
     </div>
 
     <!-- Create/Edit Modal -->
