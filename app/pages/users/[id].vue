@@ -231,6 +231,22 @@
           </div>
         </div>
       </UCard>
+
+      <!-- Checkout History Placeholder -->
+      <UCard class="mt-6">
+        <template #header>
+          <div class="flex items-center gap-2">
+            <UIcon
+              name="i-heroicons-clipboard-document-list-20-solid"
+              class="h-5 w-5 text-gray-500"
+            />
+            <h2 class="text-base font-semibold text-gray-900 dark:text-white">Checkout History</h2>
+          </div>
+        </template>
+        <div class="py-6 text-center text-gray-500">
+          Checkout history will appear here once the check-in/check-out system is implemented.
+        </div>
+      </UCard>
     </template>
 
     <!-- Edit Modal -->
