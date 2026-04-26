@@ -78,7 +78,7 @@ Displays:
 - Email, role, status
 - Profile picture (existing feature)
 - Checkout history placeholder (will show items once check-in/out is implemented in #7-#9)
-- Admin: edit button, delete button, role/status controls
+- Admin: edit button, role/status controls (set to `inactive` to deactivate)
 
 ### Create User Form
 
@@ -96,9 +96,9 @@ Fields:
 
 Same fields as create. Admin can change role and status. Email changes should be handled carefully (it's the login identifier).
 
-### Delete User
+### Deactivating a User
 
-Deleting a user with open checkouts should be blocked — items must be checked in first. Consider soft-delete (set to `inactive`) as the preferred approach over hard delete.
+There is no hard delete. Admins set a user's status to `inactive` via the edit form. Inactive users cannot log in and don't appear in user selections. All checkout history is preserved.
 
 ## Employee Self-Service
 
@@ -116,6 +116,5 @@ Employees can view their own profile at `/profile`:
 | GET    | `/api/users/[id]`         | Get user detail                                        | Admin, Supervisor, or own profile |
 | POST   | `/api/users`              | Create user                                            | Admin                             |
 | PUT    | `/api/users/[id]`         | Update user                                            | Admin                             |
-| DELETE | `/api/users/[id]`         | Delete user (blocked if open checkouts)                | Admin                             |
 | GET    | `/api/users/me`           | Get current user's profile                             | All                               |
 | GET    | `/api/users/[id]/history` | User's checkout history (not yet implemented — see #9) | Admin, Supervisor, or own history |

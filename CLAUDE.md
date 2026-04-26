@@ -33,7 +33,8 @@ Nuxt 4 template app with Better Auth (email OTP authentication), Prisma ORM, SQL
 - **Role utility**: `server/utils/require-role.ts` — `requireRole(event, 'admin')` one-liner for role checks in route handlers
 - **Prisma client**: `server/utils/prisma.ts` — uses `@prisma/adapter-better-sqlite3` driver adapter
 - **Display name utility**: `server/utils/display-name.ts` — computes display name from preferred/legal name fields
-- **API routes**: `server/api/users/` (user CRUD, profile pictures, `/me` endpoint), `server/api/locations/` (location CRUD with soft delete)
+- **API routes**: `server/api/users/` (user CRUD, profile pictures, `/me` endpoint), `server/api/locations/` (location CRUD with soft delete), `server/api/items/` (item CRUD)
+- **No hard deletes**: All entities use soft delete — locations set `status: 'inactive'`, users set `status: 'inactive'`, items set `condition: 'retired'`. This preserves checkout history.
 
 ### Database (`prisma/`)
 

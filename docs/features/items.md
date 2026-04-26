@@ -9,6 +9,7 @@ Items are the central entity in the app. Each item represents a single piece of 
 See [data-model.md](../data-model.md) for the full `Item` schema.
 
 Key fields:
+
 - **name**: Human-readable name (e.g., "iPad Pro #3", "Therapy Ball - Large")
 - **description**: Optional details
 - **condition**: `good` | `fair` | `damaged` | `retired`
@@ -18,12 +19,12 @@ Key fields:
 
 ## Permissions
 
-| Action | Admin | Supervisor | Employee |
-|---|---|---|---|
-| View items | Yes | Yes | Yes |
-| Create item | Yes | No | No |
-| Edit item | Yes | No | No |
-| Delete item | Yes | No | No |
+| Action      | Admin | Supervisor | Employee |
+| ----------- | ----- | ---------- | -------- |
+| View items  | Yes   | Yes        | Yes      |
+| Create item | Yes   | No         | No       |
+| Edit item   | Yes   | No         | No       |
+| Retire item | Yes   | No         | No       |
 
 ## Item Creation Flow
 
@@ -41,6 +42,7 @@ Key fields:
 **Route**: `/items/[id]`
 
 Displays:
+
 - Item name, description, condition badge, status badge
 - Home location and current location
 - QR code (with print button)
@@ -77,15 +79,16 @@ QR codes can be generated on-demand from the item ID (the URL is deterministic),
 
 ### Print Sizes
 
-| Size | Dimensions | Use Case |
-|---|---|---|
-| Small | 1" x 1" (2.54cm) | Small equipment, tools |
-| Medium | 2" x 2" (5.08cm) | General purpose, most items |
-| Large | 3" x 3" (7.62cm) | Large equipment, high visibility |
+| Size   | Dimensions       | Use Case                         |
+| ------ | ---------------- | -------------------------------- |
+| Small  | 1" x 1" (2.54cm) | Small equipment, tools           |
+| Medium | 2" x 2" (5.08cm) | General purpose, most items      |
+| Large  | 3" x 3" (7.62cm) | Large equipment, high visibility |
 
 ### Single Item Print
 
 Each item detail page has a "Print QR Code" button with a size selector. Clicking it opens a print-friendly view containing:
+
 - QR code at selected size
 - Item name (below QR code, small text)
 - Item ID (short form, below name)
@@ -101,6 +104,7 @@ The layout uses CSS `@page` and fixed dimensions to align with physical label sh
 ## Condition Tracking
 
 Condition is set at two points:
+
 1. **Item creation** — admin sets initial condition (defaults to `good`)
 2. **Check-in** — admin/supervisor must report condition when returning an item
 
@@ -110,12 +114,11 @@ All transitions are allowed, including un-retiring an item. Condition history is
 
 ## API Routes
 
-| Method | Route | Description | Role |
-|---|---|---|---|
-| GET | `/api/items` | List all items (filterable by location, status, condition) | All |
-| GET | `/api/items/[id]` | Get item detail | All |
-| POST | `/api/items` | Create item | Admin |
-| PUT | `/api/items/[id]` | Update item | Admin |
-| DELETE | `/api/items/[id]` | Delete item | Admin |
-| GET | `/api/items/[id]/qr` | Generate/serve QR code image | All |
-| GET | `/api/items/[id]/history` | Get checkout history for item | All |
+| Method | Route                     | Description                                                | Role  |
+| ------ | ------------------------- | ---------------------------------------------------------- | ----- |
+| GET    | `/api/items`              | List all items (filterable by location, status, condition) | All   |
+| GET    | `/api/items/[id]`         | Get item detail                                            | All   |
+| POST   | `/api/items`              | Create item                                                | Admin |
+| PUT    | `/api/items/[id]`         | Update item                                                | Admin |
+| GET    | `/api/items/[id]/qr`      | Generate/serve QR code image                               | All   |
+| GET    | `/api/items/[id]/history` | Get checkout history for item                              | All   |
