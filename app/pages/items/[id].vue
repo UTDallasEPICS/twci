@@ -156,6 +156,52 @@
     }
   }
 
+  // Check-in modal
+  const isCheckinOpen = ref(false)
+  const isCheckingIn = ref(false)
+  const checkinLocationId = ref('')
+  const checkinCondition = ref<'good' | 'fair' | 'damaged' | 'retired'>('good')
+
+  const locationOptions = computed(() =>
+    (locations.value ?? []).map((loc: { id: string; name: string }) => ({
+      label: loc.name,
+      value: loc.id,
+    }))
+  )
+
+  function openCheckin() {
+    if (!item.value) return
+    checkinLocationId.value = item.value.homeLocation.id
+    checkinCondition.value =
+      (item.value.condition as 'good' | 'fair' | 'damaged' | 'retired') || 'good'
+    isCheckinOpen.value = true
+  }
+
+  async function handleCheckin() {
+    if (!checkinLocationId.value || !checkinCondition.value) return
+    isCheckingIn.value = true
+    try {
+      await $fetch(`/api/items/${id}/checkin`, {
+        method: 'POST',
+        body: {
+          locationId: checkinLocationId.value,
+          condition: checkinCondition.value,
+        },
+      })
+      toast.add({ title: 'Item checked in', color: 'success' })
+      isCheckinOpen.value = false
+      await refresh()
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === 'object' && 'statusMessage' in err
+          ? (err as { statusMessage: string }).statusMessage
+          : 'Something went wrong'
+      toast.add({ title: 'Error', description: message, color: 'error' })
+    } finally {
+      isCheckingIn.value = false
+    }
+  }
+
   // Retire / Reactivate
   const isRetiring = ref(false)
 
@@ -300,8 +346,7 @@
                   icon="i-heroicons-arrow-left-circle-20-solid"
                   label="Check In"
                   size="sm"
-                  disabled
-                  title="Coming soon"
+                  @click="openCheckin"
                 />
               </template>
               <template v-if="isAdmin">
@@ -482,6 +527,67 @@
               @click="handleCheckout"
             >
               Check Out
+            </UButton>
+          </div>
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Check-in Modal -->
+    <UModal v-model:open="isCheckinOpen">
+      <template #content>
+        <div class="p-6">
+          <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Check In Item</h3>
+
+          <div class="mb-4 space-y-2">
+            <div>
+              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Item</p>
+              <p class="text-gray-900 dark:text-white">{{ item?.name }}</p>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Returning for</p>
+              <p class="text-gray-900 dark:text-white">
+                {{ item?.currentCheckout?.user.name }}
+              </p>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Checked out from</p>
+              <p class="text-gray-900 dark:text-white">
+                {{ item?.currentCheckout?.checkedOutFromLocation.name }}
+              </p>
+            </div>
+          </div>
+
+          <div class="mb-4 space-y-4">
+            <UFormField label="Check-in location" name="locationId" required>
+              <USelect v-model="checkinLocationId" :items="locationOptions" class="w-full" />
+            </UFormField>
+
+            <UFormField label="Condition on return" name="condition" required>
+              <USelect
+                v-model="checkinCondition"
+                :items="[
+                  { label: 'Good', value: 'good' },
+                  { label: 'Fair', value: 'fair' },
+                  { label: 'Damaged', value: 'damaged' },
+                  { label: 'Retired', value: 'retired' },
+                ]"
+                class="w-full"
+              />
+            </UFormField>
+          </div>
+
+          <div class="flex justify-end gap-2">
+            <UButton variant="soft" color="neutral" @click="isCheckinOpen = false">
+              Cancel
+            </UButton>
+            <UButton
+              color="primary"
+              :loading="isCheckingIn"
+              :disabled="!checkinLocationId || !checkinCondition"
+              @click="handleCheckin"
+            >
+              Check In
             </UButton>
           </div>
         </div>
