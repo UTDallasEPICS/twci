@@ -29,3 +29,6 @@ logs
 # Playwright
 test-results/
 playwright-report/
+
+/prisma/generated
+/dev.db
