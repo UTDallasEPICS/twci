@@ -102,6 +102,34 @@
     }
   }
 
+  // Retire / Reactivate
+  const isRetiring = ref(false)
+
+  async function toggleRetire() {
+    if (!item.value) return
+    const retiring = item.value.condition !== 'retired'
+    isRetiring.value = true
+    try {
+      await $fetch(`/api/items/${id}`, {
+        method: 'PUT',
+        body: { condition: retiring ? 'retired' : 'good' },
+      })
+      toast.add({
+        title: retiring ? 'Item retired' : 'Item reactivated',
+        color: 'success',
+      })
+      await refresh()
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === 'object' && 'statusMessage' in err
+          ? (err as { statusMessage: string }).statusMessage
+          : 'Something went wrong'
+      toast.add({ title: 'Error', description: message, color: 'error' })
+    } finally {
+      isRetiring.value = false
+    }
+  }
+
   function conditionBadgeColor(condition: string) {
     if (condition === 'good') return 'success' as const
     if (condition === 'fair') return 'warning' as const
@@ -231,6 +259,26 @@
                   label="Edit"
                   size="sm"
                   @click="openEdit"
+                />
+                <UButton
+                  v-if="item.condition === 'retired'"
+                  variant="soft"
+                  color="success"
+                  icon="i-heroicons-arrow-path-20-solid"
+                  label="Reactivate"
+                  size="sm"
+                  :loading="isRetiring"
+                  @click="toggleRetire"
+                />
+                <UButton
+                  v-else
+                  variant="soft"
+                  color="warning"
+                  icon="i-heroicons-archive-box-20-solid"
+                  label="Retire"
+                  size="sm"
+                  :loading="isRetiring"
+                  @click="toggleRetire"
                 />
               </template>
             </div>
