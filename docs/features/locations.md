@@ -16,12 +16,12 @@ Fields:
 
 ## Permissions
 
-| Action          | Admin | Supervisor | Employee |
-| --------------- | ----- | ---------- | -------- |
-| View locations  | Yes   | Yes        | Yes      |
-| Create location | Yes   | No         | No       |
-| Edit location   | Yes   | No         | No       |
-| Delete location | Yes   | No         | No       |
+| Action              | Admin | Supervisor | Employee |
+| ------------------- | ----- | ---------- | -------- |
+| View locations      | Yes   | Yes        | Yes      |
+| Create location     | Yes   | No         | No       |
+| Edit location       | Yes   | No         | No       |
+| Deactivate location | Yes   | No         | No       |
 
 ## Seed Locations
 
@@ -40,7 +40,7 @@ Three locations are seeded at setup:
 **Route**: `/locations`
 
 - Table/list of all locations with name and address
-- Admin sees "Add Location" button and edit/delete actions per row
+- Admin sees "Add Location" button and edit/deactivate actions per row
 - Each location links to its detail page
 
 ### Location Detail Page
@@ -53,7 +53,7 @@ Displays:
 - Count of items with this as home location
 - Count of items currently at this location
 - List of items currently at this location (links to item detail)
-- Admin: edit/delete buttons
+- Admin: edit/deactivate buttons
 
 ### Create / Edit Form
 

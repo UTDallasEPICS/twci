@@ -47,7 +47,7 @@ Displays:
 - Home location and current location
 - QR code (with print button)
 - Checkout history (recent 10 from CheckoutLog, with "View all history" button for lazy-loaded full history)
-- If admin: edit/delete buttons
+- If admin: edit button, retire/reactivate button
 - If admin/supervisor and item is available: "Check Out" button
 - If admin/supervisor and item is checked out: "Check In" button with current holder info
 
