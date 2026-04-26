@@ -423,7 +423,14 @@
 
           <div>
             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">QR Code</p>
-            <p class="text-gray-400 dark:text-gray-500">Not yet generated</p>
+            <div class="mt-2">
+              <img
+                :src="`/api/items/${item.id}/qr`"
+                alt="QR Code"
+                class="h-48 w-48 rounded border border-gray-200 dark:border-gray-700"
+              />
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Scan to view item</p>
+            </div>
           </div>
         </div>
       </UCard>
