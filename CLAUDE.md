@@ -23,7 +23,7 @@ Nuxt 4 template app with Better Auth (email OTP authentication), Prisma ORM, SQL
 - **UI**: Nuxt UI v3 components (`UButton`, `UCard`, `UModal`, etc.) with Tailwind CSS
 - **Auth client**: `app/utils/auth-client.ts` — Better Auth Vue client with emailOTP plugin
 - **Global auth middleware**: `app/middleware/auth.global.ts` — redirects unauthenticated users to `/auth`, authenticated users away from `/auth`
-- **Pages**: `/auth` (email OTP login flow), `/` (dashboard), `/items` (item list), `/items/[id]` (item detail with check-out modal), `/locations` (location list), `/locations/[id]` (location detail), `/users` (user list, admin/supervisor), `/users/[id]` (user detail), `/profile` (self-service profile)
+- **Pages**: `/auth` (email OTP login flow), `/` (dashboard), `/items` (item list), `/items/[id]` (item detail with check-out and check-in modals), `/locations` (location list), `/locations/[id]` (location detail), `/users` (user list, admin/supervisor), `/users/[id]` (user detail), `/profile` (self-service profile)
 
 ### Backend (`server/`)
 
@@ -33,7 +33,7 @@ Nuxt 4 template app with Better Auth (email OTP authentication), Prisma ORM, SQL
 - **Role utility**: `server/utils/require-role.ts` — `requireRole(event, 'admin')` one-liner for role checks in route handlers
 - **Prisma client**: `server/utils/prisma.ts` — uses `@prisma/adapter-better-sqlite3` driver adapter
 - **Display name utility**: `server/utils/display-name.ts` — computes display name from preferred/legal name fields
-- **API routes**: `server/api/users/` (user CRUD, profile pictures, `/me` endpoint), `server/api/locations/` (location CRUD with soft delete), `server/api/items/` (item CRUD, `POST /api/items/[id]/checkout` for check-out flow)
+- **API routes**: `server/api/users/` (user CRUD, profile pictures, `/me` endpoint), `server/api/locations/` (location CRUD with soft delete), `server/api/items/` (item CRUD, `POST /api/items/[id]/checkout` for check-out flow, `POST /api/items/[id]/checkin` for check-in flow)
 - **No hard deletes**: All entities use soft delete — locations set `status: 'inactive'`, users set `status: 'inactive'`, items set `condition: 'retired'`. This preserves checkout history.
 
 ### Database (`prisma/`)
