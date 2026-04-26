@@ -4,6 +4,7 @@ COPY . ./
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
+ENV CI="true"
 RUN corepack enable
 
 RUN pnpm i --frozen-lockfile
@@ -20,6 +21,7 @@ COPY --from=builder /pnpm-lock.yaml /
 COPY --from=builder /prisma.config.ts /
 COPY --from=builder /prisma /prisma
 COPY --from=builder /node_modules /node_modules
+COPY --from=builder /roster.csv /roster.csv
 RUN npm i -g pnpm
 COPY ./entrypoint.sh /entrypoint.sh
 
