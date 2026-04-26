@@ -85,28 +85,6 @@
     }
   }
 
-  // Delete
-  const isDeleteOpen = ref(false)
-  const isDeleting = ref(false)
-
-  async function handleDelete() {
-    isDeleting.value = true
-    try {
-      await $fetch(`/api/users/${id}`, { method: 'DELETE' })
-      toast.add({ title: 'User deleted', color: 'success' })
-      await navigateTo('/users')
-    } catch (err: unknown) {
-      const message =
-        err && typeof err === 'object' && 'statusMessage' in err
-          ? (err as { statusMessage: string }).statusMessage
-          : 'Failed to delete user'
-      toast.add({ title: 'Error', description: message, color: 'error' })
-    } finally {
-      isDeleting.value = false
-      isDeleteOpen.value = false
-    }
-  }
-
   function roleBadgeColor(role: string) {
     if (role === 'admin') return 'error' as const
     if (role === 'supervisor') return 'warning' as const
@@ -200,14 +178,6 @@
                 label="Edit"
                 size="sm"
                 @click="openEdit"
-              />
-              <UButton
-                variant="soft"
-                color="error"
-                icon="i-heroicons-trash-20-solid"
-                label="Delete"
-                size="sm"
-                @click="isDeleteOpen = true"
               />
             </div>
           </div>
@@ -313,23 +283,6 @@
               <UButton type="submit" color="primary" :loading="isSubmitting">Save</UButton>
             </div>
           </UForm>
-        </div>
-      </template>
-    </UModal>
-
-    <!-- Delete Confirmation Modal -->
-    <UModal v-model:open="isDeleteOpen">
-      <template #content>
-        <div class="p-6">
-          <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">Delete User</h3>
-          <p class="mb-4 text-gray-500 dark:text-gray-400">
-            Are you sure you want to delete <strong>{{ user?.displayName }}</strong
-            >? This action cannot be undone.
-          </p>
-          <div class="flex justify-end gap-2">
-            <UButton variant="soft" color="neutral" @click="isDeleteOpen = false">Cancel</UButton>
-            <UButton color="error" :loading="isDeleting" @click="handleDelete">Delete</UButton>
-          </div>
         </div>
       </template>
     </UModal>
