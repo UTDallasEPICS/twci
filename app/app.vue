@@ -23,6 +23,11 @@
       { to: '/items', label: 'Items', icon: 'i-heroicons-cube-20-solid' },
     ]
     if (userRole.value === 'admin' || userRole.value === 'supervisor') {
+      links.push({
+        to: '/checkouts',
+        label: 'Checkouts',
+        icon: 'i-heroicons-clipboard-document-list-20-solid',
+      })
       links.push({ to: '/users', label: 'Users', icon: 'i-heroicons-users-20-solid' })
     }
     links.push({ to: '/profile', label: 'Profile', icon: 'i-heroicons-user-circle-20-solid' })
