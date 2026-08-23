@@ -166,19 +166,31 @@
           :color="statusFilter === 'active' ? 'primary' : 'neutral'"
           :variant="statusFilter === 'active' ? 'solid' : 'outline'"
           label="Active"
-          @click="statusFilter = 'active'"
+          @click="
+            () => {
+              statusFilter = 'active'
+            }
+          "
         />
         <UButton
           :color="statusFilter === 'on_leave' ? 'primary' : 'neutral'"
           :variant="statusFilter === 'on_leave' ? 'solid' : 'outline'"
           label="On Leave"
-          @click="statusFilter = 'on_leave'"
+          @click="
+            () => {
+              statusFilter = 'on_leave'
+            }
+          "
         />
         <UButton
           :color="statusFilter === 'inactive' ? 'primary' : 'neutral'"
           :variant="statusFilter === 'inactive' ? 'solid' : 'outline'"
           label="Inactive"
-          @click="statusFilter = 'inactive'"
+          @click="
+            () => {
+              statusFilter = 'inactive'
+            }
+          "
         />
       </UButtonGroup>
     </div>
@@ -312,7 +324,16 @@
               </UFormField>
             </div>
             <div class="flex justify-end gap-2">
-              <UButton variant="soft" color="neutral" @click="isCreateOpen = false">Cancel</UButton>
+              <UButton
+                variant="soft"
+                color="neutral"
+                @click="
+                  () => {
+                    isCreateOpen = false
+                  }
+                "
+                >Cancel</UButton
+              >
               <UButton type="submit" color="primary" :loading="isSubmitting">Create</UButton>
             </div>
           </UForm>

@@ -162,7 +162,11 @@
               icon="i-heroicons-camera-20-solid"
               label="Change Photo"
               size="sm"
-              @click="isUploadOpen = true"
+              @click="
+                () => {
+                  isUploadOpen = true
+                }
+              "
             />
           </div>
 
@@ -320,7 +324,16 @@
           />
 
           <div class="flex justify-end gap-2">
-            <UButton variant="soft" color="neutral" @click="isUploadOpen = false">Cancel</UButton>
+            <UButton
+              variant="soft"
+              color="neutral"
+              @click="
+                () => {
+                  isUploadOpen = false
+                }
+              "
+              >Cancel</UButton
+            >
             <UButton
               color="success"
               :loading="isUploading"

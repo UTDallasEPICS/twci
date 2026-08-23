@@ -255,19 +255,31 @@
           :color="statusFilter === 'all' ? 'primary' : 'neutral'"
           :variant="statusFilter === 'all' ? 'solid' : 'outline'"
           label="All"
-          @click="statusFilter = 'all'"
+          @click="
+            () => {
+              statusFilter = 'all'
+            }
+          "
         />
         <UButton
           :color="statusFilter === 'available' ? 'primary' : 'neutral'"
           :variant="statusFilter === 'available' ? 'solid' : 'outline'"
           label="Available"
-          @click="statusFilter = 'available'"
+          @click="
+            () => {
+              statusFilter = 'available'
+            }
+          "
         />
         <UButton
           :color="statusFilter === 'checked_out' ? 'primary' : 'neutral'"
           :variant="statusFilter === 'checked_out' ? 'solid' : 'outline'"
           label="Checked Out"
-          @click="statusFilter = 'checked_out'"
+          @click="
+            () => {
+              statusFilter = 'checked_out'
+            }
+          "
         />
       </UButtonGroup>
     </div>
@@ -431,7 +443,16 @@
               </UFormField>
             </div>
             <div class="flex justify-end gap-2">
-              <UButton variant="soft" color="neutral" @click="isModalOpen = false">Cancel</UButton>
+              <UButton
+                variant="soft"
+                color="neutral"
+                @click="
+                  () => {
+                    isModalOpen = false
+                  }
+                "
+                >Cancel</UButton
+              >
               <UButton type="submit" color="primary" :loading="isSubmitting">
                 {{ editingItemId ? 'Save' : 'Create' }}
               </UButton>

@@ -54,7 +54,11 @@
             color="neutral"
             variant="ghost"
             aria-label="Toggle Theme"
-            @click="isDark = !isDark"
+            @click="
+              () => {
+                isDark = !isDark
+              }
+            "
           />
         </template>
 

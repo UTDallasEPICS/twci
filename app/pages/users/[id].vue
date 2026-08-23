@@ -423,7 +423,16 @@
               </UFormField>
             </div>
             <div class="flex justify-end gap-2">
-              <UButton variant="soft" color="neutral" @click="isEditOpen = false">Cancel</UButton>
+              <UButton
+                variant="soft"
+                color="neutral"
+                @click="
+                  () => {
+                    isEditOpen = false
+                  }
+                "
+                >Cancel</UButton
+              >
               <UButton type="submit" color="primary" :loading="isSubmitting">Save</UButton>
             </div>
           </UForm>
