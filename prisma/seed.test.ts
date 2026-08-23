@@ -1,122 +1,84 @@
+import { readFileSync } from 'fs'
+import { resolve } from 'path'
 import { describe, expect, it } from 'vitest'
 
-// Re-implement the pure helper functions from seed.ts for testing
-// (seed.ts runs as a script, so we test the logic directly)
+/**
+ * Validation tests for prisma/seed/users.json — the fixture consumed by
+ * prisma/seed.ts. The seed does no parsing, so these tests guard against
+ * malformed edits to the fixture (duplicate emails, unknown roles/statuses,
+ * blank names) before it ever reaches the database.
+ */
 
-const ADMIN_EMAILS = [
-  'brandy.lindsey@thewarrencenter.org',
-  'isabel.saenz@thewarrencenter.org',
-  'reachtusharwani@gmail.com',
-]
-
-const SUPERVISOR_EMAILS = ['tmw220003@utdallas.edu']
-
-function getRole(email: string): string {
-  const lower = email.toLowerCase()
-  if (ADMIN_EMAILS.includes(lower)) return 'admin'
-  if (SUPERVISOR_EMAILS.includes(lower)) return 'supervisor'
-  return 'employee'
+type FixtureUser = {
+  legalFirstName: string
+  legalLastName: string
+  preferredFirstName: string | null
+  preferredLastName: string | null
+  email: string
+  role: string
+  status: string
 }
 
-function mapStatus(positionStatus: string): string {
-  const normalized = positionStatus.trim().toLowerCase()
-  if (normalized === 'leave') return 'on_leave'
-  return 'active'
-}
+const USERS: FixtureUser[] = JSON.parse(
+  readFileSync(resolve(import.meta.dirname, 'seed', 'users.json'), 'utf-8')
+)
 
-function parseLegalName(legalName: string): { firstName: string; lastName: string } {
-  const commaIndex = legalName.indexOf(',')
-  const lastName = legalName.substring(0, commaIndex).trim()
-  const firstName = legalName.substring(commaIndex + 1).trim()
-  return { firstName, lastName }
-}
+const VALID_ROLES = ['admin', 'supervisor', 'employee']
+const VALID_STATUSES = ['active', 'on_leave']
 
-function computeDisplayName(
-  legalFirst: string,
-  legalLast: string,
-  preferredFirst: string | null,
-  preferredLast: string | null
-): string {
-  const displayFirst = preferredFirst || legalFirst
-  const displayLast = preferredLast || legalLast
-  return `${displayFirst} ${displayLast}`
-}
-
-describe('seed helpers', () => {
-  describe('getRole', () => {
-    it('returns admin for admin emails', () => {
-      expect(getRole('brandy.lindsey@thewarrencenter.org')).toBe('admin')
-      expect(getRole('isabel.saenz@thewarrencenter.org')).toBe('admin')
-      expect(getRole('reachtusharwani@gmail.com')).toBe('admin')
-    })
-
-    it('returns supervisor for supervisor emails', () => {
-      expect(getRole('tmw220003@utdallas.edu')).toBe('supervisor')
-    })
-
-    it('returns employee for all other emails', () => {
-      expect(getRole('someone@thewarrencenter.org')).toBe('employee')
-      expect(getRole('random@gmail.com')).toBe('employee')
-    })
+describe('users fixture', () => {
+  it('has a reasonable roster size', () => {
+    expect(USERS.length).toBeGreaterThan(100)
   })
 
-  describe('mapStatus', () => {
-    it('maps Active to active', () => {
-      expect(mapStatus('Active')).toBe('active')
-    })
-
-    it('maps Leave to on_leave', () => {
-      expect(mapStatus('Leave')).toBe('on_leave')
-    })
-
-    it('handles whitespace', () => {
-      expect(mapStatus(' Leave ')).toBe('on_leave')
-      expect(mapStatus(' Active ')).toBe('active')
-    })
+  it('has unique emails', () => {
+    const emails = USERS.map((u) => u.email)
+    expect(new Set(emails).size).toBe(USERS.length)
   })
 
-  describe('parseLegalName', () => {
-    it('parses simple names', () => {
-      expect(parseLegalName('Abernathy, Christopher')).toEqual({
-        firstName: 'Christopher',
-        lastName: 'Abernathy',
-      })
-    })
-
-    it('handles multi-word last names', () => {
-      expect(parseLegalName('Hernandez Kilpatrick, Hilda')).toEqual({
-        firstName: 'Hilda',
-        lastName: 'Hernandez Kilpatrick',
-      })
-    })
-
-    it('handles multi-word first names', () => {
-      expect(parseLegalName('Camacho, Janina Lizz')).toEqual({
-        firstName: 'Janina Lizz',
-        lastName: 'Camacho',
-      })
-    })
+  it('has lowercase valid email addresses', () => {
+    for (const user of USERS) {
+      expect(user.email).toBe(user.email.toLowerCase())
+      expect(user.email).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)
+    }
   })
 
-  describe('computeDisplayName', () => {
-    it('uses legal names when no preferred names', () => {
-      expect(computeDisplayName('Christopher', 'Abernathy', null, null)).toBe(
-        'Christopher Abernathy'
-      )
-    })
+  it('has non-empty legal names', () => {
+    for (const user of USERS) {
+      expect(user.legalFirstName.trim()).not.toBe('')
+      expect(user.legalLastName.trim()).not.toBe('')
+    }
+  })
 
-    it('uses preferred first name when available', () => {
-      expect(computeDisplayName('Christopher', 'Abernathy', 'Chris', null)).toBe('Chris Abernathy')
-    })
+  it('has preferred names that are null or non-empty', () => {
+    for (const user of USERS) {
+      if (user.preferredFirstName !== null) {
+        expect(user.preferredFirstName.trim()).not.toBe('')
+      }
+      if (user.preferredLastName !== null) {
+        expect(user.preferredLastName.trim()).not.toBe('')
+      }
+    }
+  })
 
-    it('uses preferred last name when available', () => {
-      expect(computeDisplayName('Christopher', 'Abernathy', null, 'Smith')).toBe(
-        'Christopher Smith'
-      )
-    })
+  it('only uses known roles', () => {
+    for (const user of USERS) {
+      expect(VALID_ROLES).toContain(user.role)
+    }
+  })
 
-    it('uses both preferred names when available', () => {
-      expect(computeDisplayName('Christopher', 'Abernathy', 'Chris', 'Smith')).toBe('Chris Smith')
-    })
+  it('only uses known statuses', () => {
+    for (const user of USERS) {
+      expect(VALID_STATUSES).toContain(user.status)
+    }
+  })
+
+  it('seeds the expected privileged accounts', () => {
+    const byEmail = Object.fromEntries(USERS.map((u) => [u.email, u]))
+
+    expect(byEmail['brandy.lindsey@thewarrencenter.org'].role).toBe('admin')
+    expect(byEmail['isabel.saenz@thewarrencenter.org'].role).toBe('admin')
+    expect(byEmail['reachtusharwani@gmail.com'].role).toBe('admin')
+    expect(byEmail['tmw220003@utdallas.edu'].role).toBe('supervisor')
   })
 })

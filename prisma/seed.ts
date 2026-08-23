@@ -1,11 +1,42 @@
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
-import Papa from 'papaparse'
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
 import { PrismaClient } from './generated/client'
 
+/**
+ * Seed script, run via `pnpm prisma db seed` (and at the end of
+ * `pnpm prisma:reset`).
+ *
+ * User accounts are seeded from `prisma/seed/users.json` so everything the
+ * seed needs lives inside `prisma/`. That file is a one-time conversion of
+ * the HR roster CSV export: names are already split into first/last fields,
+ * emails are lowercased, and each row carries its resolved `role`
+ * (admin | supervisor | employee) and `status` (active | on_leave). To change
+ * who gets seeded, edit users.json directly — no parsing happens here.
+ *
+ * Locations, items, and checkout logs are defined inline below. Checkout
+ * timestamps are computed relative to "now" so history views always look
+ * recent.
+ *
+ * Every write is an `upsert`, so re-running the seed is idempotent. User rows
+ * are refreshed from the fixture on re-run; items and checkout logs skip
+ * creation when they already exist.
+ */
+
 const adapter = new PrismaBetterSqlite3({ url: `${process.env.DATABASE_URL}` })
 const prisma = new PrismaClient({ adapter })
+
+// --- Fixture types ---
+
+type FixtureUser = {
+  legalFirstName: string
+  legalLastName: string
+  preferredFirstName: string | null
+  preferredLastName: string | null
+  email: string
+  role: string
+  status: string
+}
 
 // --- Locations ---
 
@@ -24,65 +55,6 @@ const LOCATIONS = [
   },
 ]
 
-// --- Role assignments ---
-
-const ADMIN_EMAILS = [
-  'brandy.lindsey@thewarrencenter.org',
-  'isabel.saenz@thewarrencenter.org',
-  'reachtusharwani@gmail.com',
-]
-
-const SUPERVISOR_EMAILS = ['tmw220003@utdallas.edu']
-
-function getRole(email: string): string {
-  const lower = email.toLowerCase()
-  if (ADMIN_EMAILS.includes(lower)) return 'admin'
-  if (SUPERVISOR_EMAILS.includes(lower)) return 'supervisor'
-  return 'employee'
-}
-
-// --- Status mapping ---
-
-function mapStatus(positionStatus: string): string {
-  const normalized = positionStatus.trim().toLowerCase()
-  if (normalized === 'leave') return 'on_leave'
-  return 'active'
-}
-
-// --- CSV row type ---
-
-interface RosterRow {
-  'Legal Name': string
-  'Preferred or Chosen First Name': string
-  'Preferred or Chosen Last Name': string
-  'Work Contact: Work Email': string
-  'Position Status': string
-  'Job Title Description': string
-}
-
-// --- Non-roster users ---
-
-const EXTRA_USERS = [
-  {
-    legalFirstName: 'Tushar',
-    legalLastName: 'Wani',
-    preferredFirstName: null,
-    preferredLastName: null,
-    email: 'reachtusharwani@gmail.com',
-    role: 'admin' as const,
-    status: 'active' as const,
-  },
-  {
-    legalFirstName: 'Tushar',
-    legalLastName: 'Wani',
-    preferredFirstName: null,
-    preferredLastName: null,
-    email: 'tmw220003@utdallas.edu',
-    role: 'supervisor' as const,
-    status: 'active' as const,
-  },
-]
-
 // --- Main ---
 
 async function main() {
@@ -98,63 +70,16 @@ async function main() {
   }
   console.log(`Seeded ${LOCATIONS.length} locations`)
 
-  // 2. Parse roster.csv
-  const csvPath = resolve(import.meta.dirname!, '..', 'roster.csv')
-  const csvContent = readFileSync(csvPath, 'utf-8')
-  const { data: rows } = Papa.parse<RosterRow>(csvContent, {
-    header: true,
-    skipEmptyLines: true,
-  })
+  // 2. Load users from prisma/seed/users.json
+  const usersPath = resolve(import.meta.dirname!, 'seed', 'users.json')
+  const users: FixtureUser[] = JSON.parse(readFileSync(usersPath, 'utf-8'))
 
-  // 3. Upsert roster users
-  let rosterCount = 0
-  for (const row of rows) {
-    const legalName = row['Legal Name']?.trim()
-    if (!legalName) continue
-
-    const commaIndex = legalName.indexOf(',')
-    const legalLastName = legalName.substring(0, commaIndex).trim()
-    const legalFirstName = legalName.substring(commaIndex + 1).trim()
-
-    const preferredFirstName = row['Preferred or Chosen First Name']?.trim() || null
-    const preferredLastName = row['Preferred or Chosen Last Name']?.trim() || null
-    const email = row['Work Contact: Work Email']?.trim().toLowerCase()
-    const status = mapStatus(row['Position Status'] || 'Active')
-    const role = getRole(email)
-
-    const displayFirst = preferredFirstName || legalFirstName
-    const displayLast = preferredLastName || legalLastName
+  // 3. Upsert users (roster + extra accounts live in the same fixture)
+  for (const user of users) {
+    const displayFirst = user.preferredFirstName || user.legalFirstName
+    const displayLast = user.preferredLastName || user.legalLastName
     const name = `${displayFirst} ${displayLast}`
 
-    await prisma.user.upsert({
-      where: { email },
-      update: {
-        name,
-        legalFirstName,
-        legalLastName,
-        preferredFirstName,
-        preferredLastName,
-        role,
-        status,
-      },
-      create: {
-        name,
-        email,
-        legalFirstName,
-        legalLastName,
-        preferredFirstName,
-        preferredLastName,
-        role,
-        status,
-      },
-    })
-    rosterCount++
-  }
-  console.log(`Seeded ${rosterCount} users from roster.csv`)
-
-  // 4. Upsert extra (non-roster) users
-  for (const user of EXTRA_USERS) {
-    const name = `${user.legalFirstName} ${user.legalLastName}`
     await prisma.user.upsert({
       where: { email: user.email },
       update: {
@@ -178,9 +103,9 @@ async function main() {
       },
     })
   }
-  console.log(`Seeded ${EXTRA_USERS.length} extra users`)
+  console.log(`Seeded ${users.length} users from seed/users.json`)
 
-  // 5. Seed sample items
+  // 4. Seed sample items
   const allLocations = await prisma.location.findMany({ select: { id: true, name: true } })
   const locationByName = Object.fromEntries(allLocations.map((l) => [l.name, l.id]))
 
@@ -237,7 +162,7 @@ async function main() {
   }
   console.log(`Seeded ${ITEMS.length} items`)
 
-  // 6. Seed checkout logs
+  // 5. Seed checkout logs
   // Check if we already have logs to prevent duplicating seed logs
   const existingLogsCount = await prisma.checkoutLog.count()
 

@@ -29,27 +29,21 @@ const locations = [
 
 ### Source
 
-`roster.csv` at the project root. 100 rows with columns:
+`prisma/seed/users.json` — a JSON fixture with 102 entries (100 converted from the HR roster CSV export, plus 2 extra accounts below). The seed script does no parsing; each entry already carries its final fields:
 
-| CSV Column                     | Maps To                                              |
-| ------------------------------ | ---------------------------------------------------- |
-| Legal Name                     | Parsed into `legalFirstName` + `legalLastName`       |
-| Preferred or Chosen First Name | `preferredFirstName` (nullable)                      |
-| Preferred or Chosen Last Name  | `preferredLastName` (nullable)                       |
-| Work Contact: Work Email       | `email`                                              |
-| Position Status                | `status` (`Active` → `active`, `Leave` → `on_leave`) |
-| Job Title Description          | Not stored (informational only, for now)             |
+| Fixture Field        | Notes                                           |
+| -------------------- | ----------------------------------------------- |
+| `legalFirstName`     | From roster "Legal Name" (split on first comma) |
+| `legalLastName`      | From roster "Legal Name" (split on first comma) |
+| `preferredFirstName` | Nullable                                        |
+| `preferredLastName`  | Nullable                                        |
+| `email`              | Lowercased; authoritative for login             |
+| `role`               | Baked in: `admin`, `supervisor`, or `employee`  |
+| `status`             | Baked in: `active` or `on_leave`                |
 
-### Parsing Legal Name
+To change who gets seeded, edit `users.json` directly. `prisma/seed.test.ts` validates the fixture (unique emails, known roles/statuses, non-empty names).
 
-The CSV stores legal name as `"LastName, FirstName"`. The seed script must split on the comma:
-
-```typescript
-// "Abernathy, Christopher" → legalFirstName: "Christopher", legalLastName: "Abernathy"
-// "Hernandez Kilpatrick, Hilda" → legalFirstName: "Hilda", legalLastName: "Hernandez Kilpatrick"
-// "Almeyda Noriega, Irma" → legalFirstName: "Irma", legalLastName: "Almeyda Noriega"
-const [lastName, firstName] = legalName.split(',').map((s) => s.trim())
-```
+The original CSV quirks (quoted commas in job titles, multi-word last names, emails that don't match legal names) were resolved once during the CSV → JSON conversion and no longer concern the seed script.
 
 ### Display Name Computation
 
@@ -71,58 +65,50 @@ const name = `${displayFirst} ${displayLast}`
 | `tmw220003@utdallas.edu`             | `supervisor` |
 | All other roster emails              | `employee`   |
 
-Tushar Wani (`reachtusharwani@gmail.com`) is not in the roster CSV and must be added manually in the seed:
+Tushar Wani (`reachtusharwani@gmail.com`) is not in the roster and lives in `users.json`:
 
-```typescript
+```json
 {
-  legalFirstName: 'Tushar',
-  legalLastName: 'Wani',
-  email: 'reachtusharwani@gmail.com',
-  role: 'admin',
-  status: 'active',
+  "legalFirstName": "Tushar",
+  "legalLastName": "Wani",
+  "email": "reachtusharwani@gmail.com",
+  "role": "admin",
+  "status": "active"
 }
 ```
 
 The supervisor seed user (`tmw220003@utdallas.edu`):
 
-```typescript
+```json
 {
-  legalFirstName: 'Tushar',
-  legalLastName: 'Wani',
-  email: 'tmw220003@utdallas.edu',
-  role: 'supervisor',
-  status: 'active',
+  "legalFirstName": "Tushar",
+  "legalLastName": "Wani",
+  "email": "tmw220003@utdallas.edu",
+  "role": "supervisor",
+  "status": "active"
 }
 ```
 
 ### Status Mapping
 
-| CSV Position Status | User Status |
-| ------------------- | ----------- |
-| `Active`            | `active`    |
-| `Leave`             | `on_leave`  |
+Applied once during the CSV → JSON conversion (the CSV's `Position Status` column no longer exists):
 
-Currently only Amanda Johnston has `Leave` status in the roster.
+| Roster Position Status | Fixture `status` |
+| ---------------------- | ---------------- |
+| `Active`               | `active`         |
+| `Leave`                | `on_leave`       |
+
+Currently only Amanda Johnston has `on_leave` status in the fixture.
 
 ### Seed Script Behavior
 
 The seed script should:
 
 1. Upsert locations (idempotent by name)
-2. Parse `roster.csv` using a CSV parser
-3. For each row, create a user with mapped fields
-4. Add the two extra users (Tushar admin + Tushar supervisor)
-5. Assign roles based on the role mapping table above
-6. Use upsert on email to make the seed idempotent (safe to re-run)
-
-### CSV Edge Cases
-
-Some roster entries have quirks the parser must handle:
-
-- **Quoted fields with commas**: Job titles like `"Medical Billing Associate, Credentialing"` — standard CSV parsing handles this
-- **Empty preferred name fields**: Most rows have empty preferred names — these become `null`
-- **Email doesn't match name**: Some emails use maiden/preferred names (e.g., `Bobo, Ashlyn` has email `ashlyn.smith@thewarrencenter.org`). The email is authoritative for login; names are for display.
-- **Multi-word last names**: `"Hernandez Kilpatrick, Hilda"`, `"Wilson Martin, Laquasha"` — split only on the first comma
+2. Read `prisma/seed/users.json` from inside the `prisma/` directory
+3. For each entry, upsert a user by email, refreshing names/role/status on re-run
+4. Assign roles from the `role` field baked into each fixture entry
+5. Seed items and checkout logs (see below)
 
 ## Items
 
