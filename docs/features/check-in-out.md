@@ -6,17 +6,18 @@ The check-in/check-out system is how equipment moves between locations and peopl
 
 ## Permissions
 
-| Action | Admin | Supervisor | Employee |
-|---|---|---|---|
-| Check out item to someone | Yes | Yes | No |
-| Check out item to self | Yes | Yes | No |
-| Check in item | Yes | Yes | No |
-| View own checkout history | Yes | Yes | Yes |
-| View all checkout history | Yes | Yes | No |
+| Action                    | Admin | Supervisor | Employee |
+| ------------------------- | ----- | ---------- | -------- |
+| Check out item to someone | Yes   | Yes        | No       |
+| Check out item to self    | Yes   | Yes        | No       |
+| Check in item             | Yes   | Yes        | No       |
+| View own checkout history | Yes   | Yes        | Yes      |
+| View all checkout history | Yes   | Yes        | No       |
 
 ## Check-out Flow
 
 ### Trigger Points
+
 - Item detail page: "Check Out" button (visible to admin/supervisor when item status is `available`)
 - QR code scan: scan item → item detail page → "Check Out"
 
@@ -44,6 +45,7 @@ The check-in/check-out system is how equipment moves between locations and peopl
 ## Check-in Flow
 
 ### Trigger Points
+
 - Item detail page: "Check In" button (visible to admin/supervisor when item status is `checked_out`)
 - QR code scan: scan item → item detail page → "Check In"
 
@@ -77,18 +79,23 @@ Every check-out creates a row. Every check-in completes that row. This gives a c
 ### Queryable Views
 
 **Item history** — "Where has this item been?"
+
 - Query: `CheckoutLog WHERE itemId = X ORDER BY checkedOutAt DESC`
 - Shows: each checkout/check-in cycle with who, when, where, condition
 
 **User history** — "What has this person checked out?"
+
 - Query: `CheckoutLog WHERE userId = X ORDER BY checkedOutAt DESC`
 - Shows: all items the person has had, when, current status
 
 **Open checkouts** — "What's currently checked out?"
+
 - Query: `CheckoutLog WHERE checkedInAt IS NULL`
-- Shows: all items currently with someone, useful for admin dashboard
+- Shows: all items currently with someone
+- **Dashboard page**: `/checkouts` (admin/supervisor only) with location filter, days-out badges (green ≤7d, yellow 8–30d, red >30d), and total count
 
 **Location activity** — "What's moved through this location?"
+
 - Query: `CheckoutLog WHERE checkedOutFromLocationId = X OR checkedInAtLocationId = X`
 
 ## Edge Cases
@@ -101,10 +108,10 @@ Every check-out creates a row. Every check-in completes that row. This gives a c
 
 ## API Routes
 
-| Method | Route | Description | Role |
-|---|---|---|---|
-| POST | `/api/items/[id]/checkout` | Check out an item | Admin, Supervisor |
-| POST | `/api/items/[id]/checkin` | Check in an item | Admin, Supervisor |
-| GET | `/api/items/[id]/history` | Item's checkout history | All |
-| GET | `/api/users/[id]/history` | User's checkout history | Admin, Supervisor (own history: all) |
-| GET | `/api/checkouts/open` | All currently checked-out items | Admin, Supervisor |
+| Method | Route                      | Description                     | Role                                 |
+| ------ | -------------------------- | ------------------------------- | ------------------------------------ |
+| POST   | `/api/items/[id]/checkout` | Check out an item               | Admin, Supervisor                    |
+| POST   | `/api/items/[id]/checkin`  | Check in an item                | Admin, Supervisor                    |
+| GET    | `/api/items/[id]/history`  | Item's checkout history         | All                                  |
+| GET    | `/api/users/[id]/history`  | User's checkout history         | Admin, Supervisor (own history: all) |
+| GET    | `/api/checkouts/open`      | All currently checked-out items | Admin, Supervisor                    |

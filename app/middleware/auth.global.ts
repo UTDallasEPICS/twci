@@ -5,11 +5,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   if (session.value) {
     if (to.path === '/auth') {
-      return navigateTo('/')
+      const redirect = (to.query.redirect as string) || '/'
+      const safeRedirect = redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/'
+      return navigateTo(safeRedirect)
     }
   } else {
     if (to.path !== '/auth') {
-      return navigateTo('/auth')
+      return navigateTo(`/auth?redirect=${encodeURIComponent(to.fullPath)}`)
     }
   }
 })

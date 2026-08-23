@@ -12,20 +12,57 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-});
+})
 
+const ALLOWED_DOMAINS = ['thewarrencenter.org']
+const ALLOWED_EMAILS = ['reachtusharwani@gmail.com', 'tmw220003@utdallas.edu']
+
+export function isEmailAllowed(email: string): boolean {
+  const domain = email.split('@')[1]?.toLowerCase() ?? ''
+  return ALLOWED_DOMAINS.includes(domain) || ALLOWED_EMAILS.includes(email.toLowerCase())
+}
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: 'sqlite',
   }),
+  user: {
+    additionalFields: {
+      role: {
+        type: 'string',
+        required: false,
+        defaultValue: 'employee',
+      },
+      status: {
+        type: 'string',
+        required: false,
+        defaultValue: 'active',
+      },
+      legalFirstName: {
+        type: 'string',
+        required: false,
+      },
+      legalLastName: {
+        type: 'string',
+        required: false,
+      },
+      preferredFirstName: {
+        type: 'string',
+        required: false,
+      },
+      preferredLastName: {
+        type: 'string',
+        required: false,
+      },
+    },
+  },
   plugins: [
     emailOTP({
-      async sendVerificationOTP({ email, otp, type }) {
+      async sendVerificationOTP({ email, otp, type: _type }) {
         await transporter.sendMail({
           from: process.env.EMAIL_FROM,
           to: email,
-          subject: 'OTP for nuxt-template',
+          subject: 'OTP for TWC Inventory',
           html: `Your OTP is: ${otp}`,
         })
       },

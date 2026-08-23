@@ -1,197 +1,220 @@
 <script setup lang="ts">
-  import { authClient } from '../utils/auth-client'
-
-  const { data: users, pending, error } = await useFetch('/api/users')
-
-  const selectedFile = ref<File | null>(null)
-  const imagePreview = ref<string>('')
-  const isUploading = ref(false)
-  const isModalOpen = ref(false)
-
-  async function logout() {
-    await authClient.signOut()
-    await navigateTo('/auth', { external: true })
-  }
-
-  function getImageLink(user: { image: boolean; id: string }) {
-    return user.image ? 'api/users/' + user.id + '/profile' : undefined
-  }
-
-  function handleImageUpload(event: Event) {
-    const target = event.target as HTMLInputElement
-    const files = target.files as FileList
-
-    if (!files || files.length === 0) return
-
-    const file = files[0]
-
-    if (!file?.type.startsWith('image/')) {
-      return
+  interface DashboardData {
+    stats: {
+      totalItems: number
+      checkedOut: number
+      damaged: number
+      locations: number
     }
-
-    selectedFile.value = file
-
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      imagePreview.value = e.target?.result as string
-    }
-    reader.readAsDataURL(file)
+    openCheckouts: {
+      id: string
+      item: { id: string; name: string }
+      user: { id: string; name: string }
+      checkedOutFromLocation: { id: string; name: string }
+      checkedOutAt: string
+      daysOut: number
+    }[]
+    myItems: {
+      id: string
+      item: { id: string; name: string }
+      checkedOutFromLocation: { id: string; name: string }
+      checkedOutAt: string
+    }[]
   }
 
-  const openModal = () => {
-    isModalOpen.value = true
+  const { data: session } = await authClient.useSession(useFetch)
+  const { data: me } = await useFetch('/api/users/me')
+  const { data: dashboard, pending } = await useFetch<DashboardData>('/api/dashboard')
+
+  const isAdminOrSupervisor = computed(
+    () => session.value?.user?.role === 'admin' || session.value?.user?.role === 'supervisor'
+  )
+
+  function daysOutBadgeColor(days: number) {
+    if (days <= 7) return 'success' as const
+    if (days <= 30) return 'warning' as const
+    return 'error' as const
   }
 
-  const closeModal = () => {
-    isModalOpen.value = false
-  }
-
-  async function updatePfp() {
-    if (!selectedFile.value) return
-
-    isUploading.value = true
-
-    try {
-      const formData = new FormData()
-      formData.append('file', selectedFile.value)
-
-      await $fetch('/api/users/upload', {
-        method: 'POST',
-        body: formData,
-      })
-
-      // Refresh users data to show updated profile picture
-      await refreshNuxtData()
-
-      // Reset state
-      selectedFile.value = null
-      imagePreview.value = ''
-      isModalOpen.value = false
-    } catch (error) {
-      console.error('Upload failed:', error)
-    } finally {
-      isUploading.value = false
-    }
+  function formatDate(dateStr: string) {
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    })
   }
 </script>
 
 <template>
   <UContainer class="py-10">
-    <div class="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-      <div>
-        <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Dashboard</h1>
-        <p class="mt-1 text-gray-500 dark:text-gray-400">
-          Manage your application users and settings.
-        </p>
-      </div>
-      <div class="flex justify-between gap-4 md:items-center">
-        <UModal :open="isModalOpen">
-          <UButton
-            color="success"
-            variant="soft"
-            @click="openModal"
-            icon="i-heroicons-arrow-up-on-square-20-solid"
-            label="Update Profile Picture"
-          />
-
-          <template #content>
-            <div class="m-12 space-y-4">
-              <h3 class="text-lg font-medium text-gray-900 dark:text-white">
-                Update Profile Picture
-              </h3>
-
-              <div v-if="imagePreview" class="flex justify-center">
-                <UAvatar :src="imagePreview" size="3xl" />
-              </div>
-
-              <div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  class="file:bg-primary-50 file:text-brand4 hover:file:bg-primary-100 block w-full cursor-pointer text-sm text-gray-500 file:mr-4 file:rounded-full file:border-0 file:px-4 file:py-2 file:text-sm file:font-semibold"
-                  @change="handleImageUpload"
-                />
-              </div>
-
-              <div class="flex justify-end gap-2">
-                <UButton variant="soft" @click="closeModal"> Cancel </UButton>
-                <UButton
-                  color="success"
-                  :loading="isUploading"
-                  :disabled="!selectedFile"
-                  @click="updatePfp"
-                >
-                  Upload
-                </UButton>
-              </div>
-            </div>
-          </template>
-        </UModal>
-        <UButton
-          color="error"
-          variant="soft"
-          icon="i-heroicons-arrow-right-on-rectangle-20-solid"
-          label="Logout"
-          @click="logout"
-        />
-      </div>
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Dashboard</h1>
+      <p class="mt-1 text-gray-500 dark:text-gray-400">
+        Welcome back{{ me?.displayName ? `, ${me.displayName}` : '' }}.
+      </p>
     </div>
 
-    <UCard class="w-full">
-      <template #header>
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <UIcon name="i-heroicons-users-20-solid" class="h-5 w-5 text-gray-500" />
-            <h2 class="text-base leading-7 font-semibold text-gray-900 dark:text-white">
-              Registered Users
-            </h2>
-          </div>
-          <UBadge variant="subtle" color="primary" size="md">{{ users?.length || 0 }} Users</UBadge>
-        </div>
-      </template>
+    <!-- Loading -->
+    <div v-if="pending" class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <UCard v-for="i in 4" :key="i">
+        <USkeleton class="h-8 w-16" />
+        <USkeleton class="mt-2 h-4 w-24" />
+      </UCard>
+    </div>
 
-      <div v-if="pending" class="space-y-4">
-        <div v-for="i in 3" :key="i" class="flex items-center justify-between py-2">
-          <div class="flex w-full items-center gap-3">
-            <USkeleton class="h-10 w-10 rounded-full" />
-            <div class="w-full max-w-[200px] space-y-2">
-              <USkeleton class="h-4 w-full" />
-              <USkeleton class="h-3 w-2/3" />
+    <template v-else-if="dashboard">
+      <!-- Stats -->
+      <div class="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <NuxtLink to="/items">
+          <UCard class="transition-shadow hover:shadow-md">
+            <div class="flex items-center gap-3">
+              <div class="bg-primary-50 dark:bg-primary-950 rounded-lg p-2.5">
+                <UIcon name="i-heroicons-cube-20-solid" class="text-primary-500 h-6 w-6" />
+              </div>
+              <div>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                  {{ dashboard.stats.totalItems }}
+                </p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Total Items</p>
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
+          </UCard>
+        </NuxtLink>
 
-      <div v-else-if="error">
-        <UAlert
-          icon="i-heroicons-exclamation-triangle-20-solid"
-          color="error"
-          variant="subtle"
-          title="Error loading users"
-          :description="error.message"
-        />
-      </div>
-
-      <div v-else class="divide-y divide-gray-200 dark:divide-gray-800">
-        <div
-          v-for="user in users"
-          :key="user.id"
-          class="flex items-center justify-between py-4 first:pt-0 last:pb-0"
-        >
-          <div class="flex items-center gap-3">
-            <UAvatar :src="getImageLink(user)" :alt="user.name" size="md" :as="{ img: 'img' }" />
-            <div>
-              <p class="font-medium text-gray-900 dark:text-white">{{ user.name }}</p>
-              <p class="text-sm text-gray-500 dark:text-gray-400">{{ user.email }}</p>
+        <NuxtLink :to="isAdminOrSupervisor ? '/checkouts' : '/items'">
+          <UCard class="transition-shadow hover:shadow-md">
+            <div class="flex items-center gap-3">
+              <div class="rounded-lg bg-amber-50 p-2.5 dark:bg-amber-950">
+                <UIcon
+                  name="i-heroicons-arrow-right-circle-20-solid"
+                  class="h-6 w-6 text-amber-500"
+                />
+              </div>
+              <div>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                  {{ dashboard.stats.checkedOut }}
+                </p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Checked Out</p>
+              </div>
             </div>
-          </div>
-          <UBadge :color="user.emailVerified ? 'success' : 'warning'" variant="subtle" size="sm">
-            {{ user.emailVerified ? 'Verified' : 'Pending' }}
-          </UBadge>
-        </div>
+          </UCard>
+        </NuxtLink>
 
-        <div v-if="users?.length === 0" class="py-8 text-center text-gray-500">No users found.</div>
+        <NuxtLink to="/items">
+          <UCard class="transition-shadow hover:shadow-md">
+            <div class="flex items-center gap-3">
+              <div class="rounded-lg bg-red-50 p-2.5 dark:bg-red-950">
+                <UIcon
+                  name="i-heroicons-exclamation-triangle-20-solid"
+                  class="h-6 w-6 text-red-500"
+                />
+              </div>
+              <div>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                  {{ dashboard.stats.damaged }}
+                </p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Damaged</p>
+              </div>
+            </div>
+          </UCard>
+        </NuxtLink>
+
+        <NuxtLink to="/locations">
+          <UCard class="transition-shadow hover:shadow-md">
+            <div class="flex items-center gap-3">
+              <div class="rounded-lg bg-green-50 p-2.5 dark:bg-green-950">
+                <UIcon name="i-heroicons-map-pin-20-solid" class="h-6 w-6 text-green-500" />
+              </div>
+              <div>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                  {{ dashboard.stats.locations }}
+                </p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Locations</p>
+              </div>
+            </div>
+          </UCard>
+        </NuxtLink>
       </div>
-    </UCard>
+
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <!-- My Items (all users) -->
+        <UCard>
+          <template #header>
+            <div class="flex items-center gap-2">
+              <UIcon name="i-heroicons-cube-20-solid" class="h-5 w-5 text-gray-500" />
+              <h2 class="text-base font-semibold text-gray-900 dark:text-white">My Items</h2>
+            </div>
+          </template>
+          <div v-if="!dashboard.myItems.length" class="py-4 text-center text-gray-500">
+            You don't have any items checked out.
+          </div>
+          <div v-else class="space-y-3">
+            <NuxtLink
+              v-for="checkout in dashboard.myItems"
+              :key="checkout.id"
+              :to="`/items/${checkout.item.id}`"
+              class="block rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+            >
+              <div class="flex items-center justify-between">
+                <span class="font-medium text-gray-900 dark:text-white">
+                  {{ checkout.item.name }}
+                </span>
+                <span class="text-xs text-gray-400">
+                  {{ formatDate(checkout.checkedOutAt) }}
+                </span>
+              </div>
+              <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                From {{ checkout.checkedOutFromLocation.name }}
+              </p>
+            </NuxtLink>
+          </div>
+        </UCard>
+
+        <!-- Open Checkouts (admin/supervisor) -->
+        <UCard v-if="isAdminOrSupervisor">
+          <template #header>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <UIcon
+                  name="i-heroicons-clipboard-document-list-20-solid"
+                  class="h-5 w-5 text-gray-500"
+                />
+                <h2 class="text-base font-semibold text-gray-900 dark:text-white">
+                  Recent Open Checkouts
+                </h2>
+              </div>
+              <NuxtLink
+                to="/checkouts"
+                class="text-primary-500 text-sm font-medium hover:underline"
+              >
+                View all
+              </NuxtLink>
+            </div>
+          </template>
+          <div v-if="!dashboard.openCheckouts.length" class="py-4 text-center text-gray-500">
+            No items are currently checked out.
+          </div>
+          <div v-else class="space-y-3">
+            <NuxtLink
+              v-for="checkout in dashboard.openCheckouts"
+              :key="checkout.id"
+              :to="`/items/${checkout.item.id}`"
+              class="block rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+            >
+              <div class="flex items-center justify-between">
+                <span class="font-medium text-gray-900 dark:text-white">
+                  {{ checkout.item.name }}
+                </span>
+                <UBadge :color="daysOutBadgeColor(checkout.daysOut)" variant="subtle" size="sm">
+                  {{ checkout.daysOut }}d
+                </UBadge>
+              </div>
+              <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                {{ checkout.user.name }} &mdash; from {{ checkout.checkedOutFromLocation.name }}
+              </p>
+            </NuxtLink>
+          </div>
+        </UCard>
+      </div>
+    </template>
   </UContainer>
 </template>

@@ -16,17 +16,18 @@ An inventory management application for **The Warren Center** (TWC), a pediatric
 
 All ~100 TWC employees will have accounts. Three roles control what they can do:
 
-| Role | Can do |
-|---|---|
-| **Admin** | CRUD locations, items, users. Check in/out items. Full access. |
-| **Supervisor** | Check in/out items (for self and others). View everything. |
-| **Employee** | View items and their own checkout history. Items can be checked in/out *for* them by admin/supervisor. |
+| Role           | Can do                                                                                                 |
+| -------------- | ------------------------------------------------------------------------------------------------------ |
+| **Admin**      | CRUD locations, items, users. Check in/out items. Full access.                                         |
+| **Supervisor** | Check in/out items (for self and others). View everything.                                             |
+| **Employee**   | View items and their own checkout history. Items can be checked in/out _for_ them by admin/supervisor. |
 
 Initial admins: Brandy Lindsey, Isabel Saenz, Tushar Wani.
 
 ## Core Features
 
 ### Item Management (Admin only)
+
 - Create, read, update, delete items
 - Each item gets a unique QR code generated at creation
 - QR codes are printable in multiple label sizes
@@ -34,26 +35,37 @@ Initial admins: Brandy Lindsey, Isabel Saenz, Tushar Wani.
 - Condition tracking: good, fair, damaged, retired (all transitions allowed)
 
 ### Check-in / Check-out (Admin + Supervisor)
+
 - Check out an item from a location to a person
 - Check in an item at any location (does not have to match where it was checked out from)
 - Condition must be reported on every check-in
 - Full audit trail: who, when, where, condition
 
 ### Location Management (Admin only)
+
 - CRUD operations on locations
 - Three locations seeded at setup
 
 ### User Management (Admin only)
+
 - CRUD operations on users
 - Assign roles and statuses
 - Users seeded from roster CSV at setup
 
 ### QR Code Scanning (All roles)
+
 - Scanning a QR code opens the item detail page
 - If not logged in, redirect to login, then back to the item page
 - Admin/supervisor see check-in/out actions; employees see read-only detail
 
+### Dashboard (All roles)
+
+- Stats overview: total items, checked out count, damaged count, active locations
+- My Items: items currently checked out to the logged-in user
+- Recent Open Checkouts: oldest open checkouts with days-out indicators (admin/supervisor only)
+
 ### Authentication
+
 - Email OTP via Better Auth
 - Restricted to `@thewarrencenter.org` domain + two specific external emails
 - No unauthenticated access to any data or page
